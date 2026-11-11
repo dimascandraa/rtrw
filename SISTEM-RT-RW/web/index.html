@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#214b40">
+    <meta name="description" content="Sistem Informasi RT/RW untuk mengelola data dan layanan lingkungan.">
+    <title>Sistem RT/RW — Satu lingkungan, satu data</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <script src="./assets/js/api.js" defer></script>
+    <script src="./assets/js/app.js" defer></script>
+  </head>
+  <body>
+    <main id="login-screen" class="login-screen">
+      <section class="login-brand" aria-label="Tentang Sistem RT/RW">
+        <a class="brand-lockup" href="#" aria-label="Sistem RT/RW">
+          <span class="brand-mark">RW</span>
+          <span>Sistem Informasi RT/RW</span>
+        </a>
+        <div class="brand-message">
+          <p class="eyebrow">Sistem Informasi RT/RW</p>
+          <h1>Satu lingkungan,<br>satu data.</h1>
+          <p>Kelola data warga, iuran, surat, dan kegiatan lingkungan dalam satu tempat.</p>
+        </div>
+        <div class="brand-bars" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <p class="brand-caption">Lebih dekat, lebih tertata.</p>
+      </section>
+
+      <section class="login-panel">
+        <button class="button button-outline theme-toggle login-theme-toggle" type="button" data-theme-toggle>
+          <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Gelap</span>
+        </button>
+        <div class="login-content">
+          <div class="mobile-brand brand-lockup">
+            <span class="brand-mark">RW</span>
+            <span>Sistem Informasi RT/RW</span>
+          </div>
+          <p class="eyebrow">Selamat datang kembali</p>
+          <h2>Masuk</h2>
+          <p class="muted login-intro">Gunakan email atau nomor telepon yang terdaftar.</p>
+          <form id="login-form">
+            <label for="login-identity">Email atau telepon</label>
+            <input id="login-identity" name="identity" type="text" autocomplete="username" placeholder="nama@email.com" required>
+            <div class="password-label">
+              <label for="login-password">Kata sandi</label>
+              <button id="toggle-password" class="text-button" type="button" aria-label="Tampilkan kata sandi">Tampilkan</button>
+            </div>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi" required>
+            <div class="login-options">
+              <label class="checkbox-label"><input type="checkbox" name="remember"> <span>Ingat saya</span></label>
+              <button id="forgot-password" class="text-button" type="button">Lupa kata sandi?</button>
+            </div>
+            <button class="button button-primary login-submit" type="submit">Masuk</button>
+          </form>
+          <div class="demo-callout">
+            <div>
+              <span class="demo-dot" aria-hidden="true"></span>
+              <div>
+                <strong>Jelajahi versi demo</strong>
+                <p>Pratinjau lokal tanpa koneksi database.</p>
+              </div>
+            </div>
+            <button id="demo-login" class="button button-secondary" type="button">Buka demo offline <span aria-hidden="true">→</span></button>
+          </div>
+          <p class="login-footnote">Belum punya akun? Hubungi pengurus RT/RW Anda.</p>
+        </div>
+      </section>
+    </main>
+
+    <div id="app-shell" class="app-shell" hidden>
+      <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-top">
+          <a class="brand-lockup sidebar-brand" href="#" data-page="home" aria-label="Kembali ke beranda">
+            <span class="brand-mark">RW</span>
+            <span class="brand-name">Sistem RT/RW</span>
+          </a>
+          <button class="button button-outline theme-toggle sidebar-theme-toggle" type="button" data-theme-toggle>
+            <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Gelap</span>
+          </button>
+        </div>
+
+        <nav id="main-navigation" class="main-navigation" aria-label="Navigasi utama"></nav>
+
+        <div class="sidebar-profile">
+          <div id="profile-avatar" class="avatar" aria-hidden="true">R</div>
+          <div class="profile-copy">
+            <strong id="profile-name">Rina Wijaya</strong>
+            <span id="profile-role">Admin RW · RW 05</span>
+          </div>
+          <button id="logout-button" class="button button-outline logout-button" type="button">Keluar</button>
+        </div>
+      </aside>
+
+      <div class="main-column">
+        <header class="topbar">
+          <button id="mobile-menu-toggle" class="icon-button mobile-menu-toggle" type="button" aria-label="Buka menu" aria-expanded="false">
+            <span aria-hidden="true">☰</span>
+          </button>
+          <div class="topbar-context">
+            <span id="organization-name" class="context-label">Perumahan Griya Contoh</span>
+            <span class="context-divider" aria-hidden="true">/</span>
+            <span id="region-name">RW 05</span>
+          </div>
+          <div class="topbar-actions">
+            <label class="search-box">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <span class="sr-only">Cari menu atau fitur</span>
+              <input id="global-search" type="search" placeholder="Cari menu atau fitur..." autocomplete="off">
+              <kbd>/</kbd>
+            </label>
+            <div class="notification-wrap">
+              <button id="notification-toggle" class="icon-button notification-button" type="button" aria-label="Notifikasi" aria-expanded="false">
+                <span aria-hidden="true">♧</span><span class="notification-dot"></span>
+              </button>
+              <section id="notification-popover" class="notification-popover" aria-label="Notifikasi terbaru" hidden>
+                <div class="popover-heading"><strong>Notifikasi</strong><span id="notification-unread">0 baru</span></div>
+                <div id="notification-items"></div>
+              </section>
+            </div>
+          </div>
+        </header>
+
+        <main id="page-content" class="page-content" tabindex="-1"></main>
+        <footer class="app-footer">
+          <span><span class="demo-dot" aria-hidden="true"></span><span id="connection-status">Mode demo · Data dummy pengembangan</span></span>
+          <span>Sistem Informasi RT/RW</span>
+        </footer>
+      </div>
+    </div>
+
+    <dialog id="feature-dialog" class="feature-dialog" aria-labelledby="dialog-title">
+      <div class="dialog-top">
+        <span id="dialog-icon" class="feature-icon dialog-icon" aria-hidden="true"></span>
+        <button id="dialog-close" class="icon-button dialog-close" type="button" aria-label="Tutup">×</button>
+      </div>
+      <p class="eyebrow">Pratinjau fitur</p>
+      <h2 id="dialog-title"></h2>
+      <p id="dialog-description" class="muted"></p>
+      <div class="dialog-note">
+        <span class="dialog-note-icon" aria-hidden="true">i</span>
+        <p>Rancangan saat ini mencakup navigasi modul. Tampilan operasional fitur akan dibuat pada tahap berikutnya dan memerlukan integrasi REST API.</p>
+      </div>
+      <div class="dialog-tables">
+        <strong>Tabel database terkait</strong>
+        <div id="dialog-tables-list" class="table-tags"></div>
+      </div>
+      <button id="dialog-done" class="button button-primary dialog-done" type="button">Mengerti</button>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

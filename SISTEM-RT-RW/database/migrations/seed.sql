@@ -206,14 +206,14 @@ INSERT INTO mutasi_warga (id, id_organisasi, id_warga, jenis_mutasi, tanggal_ber
 
 -- Pengguna (password semua akun = Password123, hash bcrypt) -------------------
 INSERT INTO pengguna (id, id_warga, nama, email, telepon, hash_kata_sandi, status, email_terverifikasi_pada) VALUES
-  (1, NULL, 'Super Admin',    'superadmin@contoh.test', '081300000001', '__HASH__', 'aktif', NOW()),
-  (2, 4,    'Rina Wijaya',    'adminrw@contoh.test',    '081300000002', '__HASH__', 'aktif', NOW()),
-  (3, 1,    'Budi Santoso',   'ketuarw@contoh.test',    '081300000003', '__HASH__', 'aktif', NOW()),
-  (4, 3,    'Andi Wijaya',    'ketuart1@contoh.test',   '081300000004', '__HASH__', 'aktif', NOW()),
-  (5, 5,    'Hendra Gunawan', 'sekretaris@contoh.test', '081300000005', '__HASH__', 'aktif', NOW()),
-  (6, 6,    'Dewi Lestari',   'bendahara@contoh.test',  '081300000006', '__HASH__', 'aktif', NOW()),
-  (7, 9,    'Agus Pratama',   'agus@contoh.test',       '081300000007', '__HASH__', 'aktif', NOW()),
-  (8, 11,   'Rudi Hartono',   'rudi@contoh.test',       '081300000008', '__HASH__', 'menunggu_verifikasi', NULL);
+  (1, NULL, 'Super Admin',    'superadmin@contoh.test', '081300000001', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
+  (2, 4,    'Rina Wijaya',    'adminrw@contoh.test',    '081300000002', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
+  (3, 1,    'Budi Santoso',   'ketuarw@contoh.test',    '081300000003', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
+  (4, 3,    'Andi Wijaya',    'ketuart1@contoh.test',   '081300000004', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
+  (5, 5,    'Hendra Gunawan', 'sekretaris@contoh.test', '081300000005', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
+  (6, 6,    'Dewi Lestari',   'bendahara@contoh.test',  '081300000006', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
+  (7, 9,    'Agus Pratama',  'agus@contoh.test',       '081300000007', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
+  (8, 11,   'Rudi Hartono',  'rudi@contoh.test',       '081300000008', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'menunggu_verifikasi', NULL);
 
 -- Penugasan: pengguna -> peran -> wilayah (Super Admin lintas organisasi => organisasi NULL)
 -- id_peran: 1 super_admin, 2 admin_rw, 3 ketua_rw, 4 ketua_rt, 5 sekretaris, 6 bendahara, 7 warga

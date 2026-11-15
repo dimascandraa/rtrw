@@ -11,7 +11,8 @@ Folder ini berisi rancangan antarmuka (UI/UX) **Sistem Informasi RT/RW** milik k
 3. [Struktur Folder](#3-struktur-folder)
 4. [Bagian A: Login, Beranda, dan Menu Modul](#4-bagian-a-login-beranda-dan-menu-modul)
 5. [Bagian B: Tampilan Fitur di Dalam Menu](#5-bagian-b-tampilan-fitur-di-dalam-menu)
-6. [Catatan](#6-catatan)
+6. [Bagian C: Flowchart](#6-bagian-c-flowchart)
+7. [Catatan](#7-catatan)
 
 ---
 
@@ -56,18 +57,20 @@ UI-UX/
 │   ├── 01-login-gelap.png
 │   ├── 02-login-terang.png
 │   └── ... 26-manajemen-platform-gelap.png
-└── 02-desain-fitur/               (52 gambar: 26 fitur x 2 mode)
-    ├── 01-dashboard-laporan/
-    ├── 02-manajemen-data-warga/
-    ├── 03-keuangan-rtrw/
-    ├── 04-administrasi-surat/
-    ├── 05-layanan-warga/
-    ├── 06-informasi-komunikasi/
-    ├── 07-sosial-kegiatan/
-    ├── 08-keamanan-lingkungan/
-    ├── 09-registrasi-akses/
-    ├── 10-keamanan-akun/
-    └── 11-manajemen-platform/
+├── 02-desain-fitur/               (52 gambar: 26 fitur x 2 mode)
+│   ├── 01-dashboard-laporan/
+│   ├── 02-manajemen-data-warga/
+│   ├── 03-keuangan-rtrw/
+│   ├── 04-administrasi-surat/
+│   ├── 05-layanan-warga/
+│   ├── 06-informasi-komunikasi/
+│   ├── 07-sosial-kegiatan/
+│   ├── 08-keamanan-lingkungan/
+│   ├── 09-registrasi-akses/
+│   ├── 10-keamanan-akun/
+│   └── 11-manajemen-platform/
+└── 03-flowchart/                  (alur sistem dalam Mermaid)
+    └── flowchart.md
 ```
 
 Nama file diawali nomor urut dan diakhiri `terang` atau `gelap`.
@@ -460,8 +463,36 @@ Riwayat backup terjadwal dan ekspor data, dengan tombol *Backup sekarang*.
 **Tabel ERD terkait:** `cadangan_data`, `pengaturan`
 
 ---
-
-## 6. Catatan
+## 6. Bagian C: Flowchart
+ 
+Alur kerja sistem disusun dalam bentuk flowchart (Mermaid, tampil langsung di GitHub) dan mengikuti desain di Bagian A dan B serta ERD. Isinya **1 alur utama, 11 alur modul, dan 26 alur fitur**.
+ 
+**Alur utama sistem**
+ 
+```mermaid
+flowchart TD
+  A(["Mulai"]) --> B["Buka halaman login"]
+  B --> C["Isi email/telepon dan kata sandi"]
+  C --> D{"Data valid?"}
+  D -->|Tidak| E["Tampilkan pesan gagal"]
+  E --> C
+  D -->|Ya| F["Sistem membuat sesi login"]
+  F --> G["Tampilkan Beranda sesuai peran dan wilayah"]
+  G --> H["Pilih modul di sidebar"]
+  H --> I["Tampilkan halaman modul"]
+  I --> J["Pilih fitur"]
+  J --> K["Gunakan fitur"]
+  K --> L{"Lanjut memakai sistem?"}
+  L -->|Ya| H
+  L -->|Tidak| M["Klik Keluar"]
+  M --> N["Sesi diakhiri"]
+  N --> O(["Selesai"])
+```
+ 
+**Flowchart lengkap:** alur tiap modul dan tiap fitur ada di [03-flowchart/flowchart.md](./03-flowchart/flowchart.md).
+ 
+---
+## 7. Catatan
 
 1. **Status:** semua gambar adalah **draft desain**, bukan tampilan final. Warna, tata letak, dan istilah masih bisa berubah mengikuti masukan kelompok atau dosen.
 2. **Cakupan:** login, beranda, 11 modul, dan 26 fitur, masing-masing dalam mode terang dan gelap.
@@ -478,4 +509,5 @@ Riwayat backup terjadwal dan ekspor data, dengan tombol *Backup sekarang*.
 |---|---|---|
 | 1 | Login, beranda, dan 11 modul (terang dan gelap) | Selesai |
 | 2 | Tampilan isi 26 fitur (terang dan gelap) | Selesai |
-| 3 | Form tambah/ubah, halaman detail, dan alur aksi | Direncanakan |
+| 3 | Flowchart alur sistem (utama, modul, dan fitur) | Selesai |
+| 4 | Form tambah/ubah, halaman detail, dan alur aksi | Direncanakan |

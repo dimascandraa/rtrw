@@ -1,0 +1,14 @@
+# Salin berkas ini menjadi config.properties (tidak ikut di-commit).
+# Jangan menyimpan password atau token di sini.
+
+# Alamat Backend REST API (tanpa garis miring di akhir).
+api.base.url=http://localhost:8000
+
+# Batas waktu permintaan ke server, dalam detik.
+api.timeout.seconds=15
+
+# Nama kolom JSON untuk email/telepon pada POST /api/login.
+api.login.field=email
+
+# Peran yang memakai aplikasi Mobile dan ditolak di desktop (pisahkan dengan koma).
+desktop.blocked.roles=warga

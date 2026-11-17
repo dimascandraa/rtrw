@@ -14,72 +14,104 @@ Dokumen keputusan RT-026: [`docs/RT-026-kebutuhan-desktop.md`](docs/RT-026-kebut
 
 ## Persyaratan
 
-- **JDK 11 atau lebih baru** (kode dikompilasi dengan `--release 11`, sudah dicoba di JDK 21)
-- Backend API berjalan, **atau** pakai API tiruan di bawah ini
+- **JDK 11 atau lebih baru** (JDK lengkap, termasuk `javac` dan `jar`; sudah diuji dengan JDK 23).
+- Backend API yang sudah berjalan, atau API tiruan lokal untuk mencoba aplikasi tanpa backend/MySQL.
 
-## Cara menjalankan di Windows
+## Menjalankan di Windows (PowerShell)
 
-1. Pastikan JDK 11 atau lebih baru terpasang. Buka PowerShell atau Command Prompt dan cek:
+Cara ini menjalankan aplikasi beserta API tiruan berisi data contoh. Tidak perlu menyalakan PHP atau MySQL.
+
+1. Pastikan JDK terpasang. Buka PowerShell dan jalankan:
 
    ```powershell
    java -version
    javac -version
+   jar --version
    ```
 
-   Keduanya harus menampilkan versi 11 atau lebih baru. Jika perintah tidak ditemukan, pasang JDK dan tambahkan folder `bin` JDK ke `PATH`.
+   Semua perintah harus dikenali. Versi Java harus 11 atau lebih baru.
 
-2. Buka terminal pertama, lalu jalankan API tiruan dari folder `desktop`:
+2. Jalankan API tiruan di terminal PowerShell pertama:
 
    ```powershell
-   cd C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop
+   Set-Location -LiteralPath 'C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop'
    .\mock-server.bat
    ```
 
-   API tiruan berjalan di `http://127.0.0.1:8000` dan menyediakan data dummy. Biarkan terminal ini tetap terbuka.
+   Tunggu sampai muncul `Mock API berjalan di http://127.0.0.1:8000`. Biarkan terminal ini tetap terbuka.
 
-3. Buka terminal kedua pada folder yang sama dan jalankan aplikasi:
+   Jika proyek berada di lokasi lain, ganti alamat pada `Set-Location` dengan lokasi folder `desktop` Anda.
+
+3. Buka terminal PowerShell kedua dan jalankan aplikasi:
 
    ```powershell
-   cd C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop
+   Set-Location -LiteralPath 'C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop'
+   .\build.bat
    .\run.bat
    ```
 
-   Pertama kali dijalankan, `run.bat` akan membangun aplikasi secara otomatis. Pada layar login, gunakan alamat server `http://127.0.0.1:8000`, akun `admin@rtrw.test`, dan kata sandi `admin123`.
+   Tunggu sampai `build.bat` menampilkan `Selesai: out\rtrw-desktop.jar`. Saat jendela login terbuka, isi:
 
-4. Untuk menghentikan API tiruan, tekan `Ctrl+C` di terminal pertama. Tutup jendela aplikasi seperti biasa.
+   - **Alamat server:** `http://127.0.0.1:8000`
+   - **Email atau telepon:** `admin@rtrw.test`
+   - **Kata sandi:** `admin123`
 
-Jika sudah memiliki backend yang berjalan, lewati langkah menjalankan API tiruan. Jalankan aplikasi dengan alamat backend:
+   `run.bat` akan membangun JAR otomatis jika belum ada. Menjalankan `build.bat` secara eksplisit di atas membantu memastikan JAR terbaru berhasil dibuat.
+
+4. Untuk berhenti, tutup aplikasi desktop, lalu tekan `Ctrl+C` pada terminal API tiruan.
+
+API tiruan hanya menggunakan data dummy dalam memori. Perubahan data akan hilang saat server dihentikan.
+
+### Jika tidak menggunakan PowerShell
+
+Di Command Prompt, buka dua jendela dan jalankan perintah berikut pada masing-masing:
+
+```bat
+cd /d C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop
+mock-server.bat
+```
+
+```bat
+cd /d C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop
+build.bat
+run.bat
+```
+
+Ganti lokasi folder jika proyek tidak berada di `C:\TicTacToe\rtrw\SISTEM-RT-RW`.
+
+### Menjalankan dengan backend sendiri
+
+Jalankan backend sesuai dokumentasinya, lalu buka aplikasi dari folder `desktop`:
 
 ```powershell
 .\run.bat --url=http://localhost:8000
 ```
 
-Ganti URL dengan alamat backend Anda. URL juga dapat dimasukkan pada kolom **Alamat server** di halaman login; alamat tersebut akan disimpan untuk penggunaan berikutnya.
+Ganti URL dengan alamat backend yang benar. Alternatifnya, buka aplikasi tanpa argumen dan isi URL tersebut pada kolom **Alamat server** di halaman login. URL yang digunakan akan disimpan untuk pemakaian berikutnya. Untuk server produksi, gunakan HTTPS.
 
-## Mulai cepat (tanpa backend)
+### Mengatasi masalah saat menjalankan
 
-```bash
-./mock-server.sh      # terminal 1: API tiruan di http://127.0.0.1:8000 (data dummy)
-./run.sh              # terminal 2: jalankan aplikasi (build otomatis bila perlu)
-```
+| Pesan atau masalah | Yang perlu dilakukan |
+|---|---|
+| VS Code menampilkan `debugjava.ps1 cannot be loaded because running scripts is disabled` | Ini kebijakan PowerShell yang memblokir skrip debugger Java VS Code, bukan error dari aplikasi. Untuk mencoba desktop, jalankan `run.bat` dari Command Prompt sesuai langkah di atas. Jangan mengubah execution policy seluruh komputer tanpa persetujuan administrator. |
+| `java`, `javac`, atau `jar` tidak dikenali | Pasang JDK 11+ (bukan hanya JRE), tambahkan folder `bin` JDK ke `PATH`, tutup lalu buka kembali terminal, dan ulangi pemeriksaan versi. |
+| Build menampilkan error `javac` | Pastikan terminal berada di folder `desktop`, gunakan JDK 11+, lalu jalankan `.\build.bat` lagi. Baca error `javac` pertama; jika masih gagal, salin seluruh output terminal untuk diperiksa. |
+| `Unable to access jarfile` atau `Could not find or load main class` | Build mungkin belum berhasil. Jalankan `.\build.bat` dan pastikan ada pesan `Selesai: out\rtrw-desktop.jar` sebelum menjalankan `.\run.bat`. |
+| `Address already in use` saat menjalankan API tiruan | Port 8000 sedang dipakai. Jalankan `.\mock-server.bat 8001`, lalu gunakan alamat `http://127.0.0.1:8001` di halaman login. |
+| Aplikasi menampilkan tidak dapat terhubung ke server | Pastikan terminal API tiruan masih terbuka dan alamat/port di halaman login sama dengan alamat yang dicetak oleh server. |
+| Login ditolak | Untuk API tiruan, gunakan tepat `admin@rtrw.test` dan `admin123`. Akun `warga@rtrw.test` memang tidak diizinkan masuk ke aplikasi desktop. |
+| JAR tidak dapat ditulis karena sedang digunakan | Tutup semua jendela aplikasi desktop yang berjalan, kemudian jalankan ulang `.\build.bat`. |
 
-Pada Windows, ikuti bagian [Cara menjalankan di Windows](#cara-menjalankan-di-windows). Akun uji: `admin@rtrw.test` / `admin123` (peran Bendahara). Akun `warga@rtrw.test` / `warga123` sengaja ditolak karena warga memakai aplikasi Mobile.
-
-## Menghubungkan ke backend sebenarnya
-
-1. Isi **Alamat server** di halaman login (misalnya `http://localhost:8000`). Alamat tersimpan otomatis ke `config.properties`.
-2. Atau salin `config.properties.example` menjadi `config.properties` dan ubah isinya. Argumen `--url=...` juga bisa dipakai: `./run.sh --url=https://rtrw.example.com` (Windows: `.\run.bat --url=https://rtrw.example.com`).
-
-`config.properties` tidak ikut di-commit. Jangan simpan password atau token di sana. Token hanya disimpan di memori selama aplikasi berjalan.
+Jika masih gagal, kirimkan **pesan error lengkap dari terminal** dan sebutkan perintah terakhir yang dijalankan. Jangan kirim kata sandi atau token backend.
 
 ## Perintah
 
-| Perintah | Fungsi |
-|---|---|
-| `./build.sh` | Kompilasi dan buat `out/rtrw-desktop.jar` |
-| `./run.sh` | Jalankan aplikasi |
-| `./test.sh` | Jalankan 27 pengujian otomatis (JSON, parser respons, klien API vs API tiruan) |
-| `./mock-server.sh [port]` | Jalankan API tiruan |
+| Windows | Linux/macOS | Fungsi |
+|---|---|---|
+| `build.bat` | `./build.sh` | Kompilasi dan buat `out/rtrw-desktop.jar` |
+| `run.bat` | `./run.sh` | Jalankan aplikasi |
+| `test.bat` | `./test.sh` | Jalankan pengujian otomatis |
+| `mock-server.bat [port]` | `./mock-server.sh [port]` | Jalankan API tiruan (port bawaan 8000) |
 
 ## Fitur saat ini
 

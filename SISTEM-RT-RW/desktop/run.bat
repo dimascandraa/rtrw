@@ -1,7 +1,5 @@
 @echo off
-setlocal
+rem Menjalankan aplikasi desktop. Opsi: run.bat --url=http://alamat-server
 cd /d "%~dp0"
-if not exist out mkdir out
-javac -encoding UTF-8 -d out *.java
-if errorlevel 1 exit /b 1
-java -cp out app.Main
+if not exist out\rtrw-desktop.jar call build.bat
+java -jar out\rtrw-desktop.jar %*

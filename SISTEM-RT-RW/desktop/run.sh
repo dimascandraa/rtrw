@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Jalankan dari folder desktop/ :  ./run.sh
-set -e
+# Menjalankan aplikasi desktop. Opsi: ./run.sh --url=http://alamat-server
+set -euo pipefail
 cd "$(dirname "$0")"
-mkdir -p out
-javac -encoding UTF-8 -d out ./*.java
-java -cp out app.Main
+[ -f out/rtrw-desktop.jar ] || ./build.sh
+exec java -jar out/rtrw-desktop.jar "$@"

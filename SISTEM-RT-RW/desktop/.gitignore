@@ -1,0 +1,22 @@
+# Hasil build
+out/
+target/
+**/build/
+.gradle/
+*.class
+*.jar
+
+# Konfigurasi lokal (salin dari config.properties.example)
+config.properties
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

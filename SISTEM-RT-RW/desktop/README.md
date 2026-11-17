@@ -1,67 +1,149 @@
-# Desktop - Sistem Informasi RT/RW
+# Aplikasi Desktop: Sistem Informasi RT/RW
 
-Aplikasi Java Swing memakai backend REST API yang sama dengan web dan tidak mengakses MySQL secara langsung. Login menggunakan cookie sesi dari API; ringkasan, pengumuman, aktivitas, dan notifikasi diambil dari endpoint backend.
+Aplikasi desktop **Java Swing** untuk pengurus RT/RW (Bendahara, Ketua RT/RW, Admin). Aplikasi ini hanya **klien REST API**: semua data dan aturan bisnis ada di Backend PHP Native, dan hanya backend yang mengakses MySQL.
 
-## Prasyarat
+```
+Web (HTML, CSS, JS) ─┐
+Mobile (Android Java) ┼── Backend REST API (PHP Native) ── MySQL
+Desktop (Java Swing) ─┘                                       <- folder ini
+```
 
-- JDK 11 atau lebih baru (`java -version` dan `javac -version`)
-- PHP 7.4+ dengan `pdo_mysql`
-- MySQL/MariaDB
+Sesuai ketentuan repo: **tanpa framework dan tanpa library tambahan**. Hanya JDK (Swing, `java.net.http`). Parser JSON ditulis sendiri di `api/Json.java`. Jika kelompok ingin memakai library (misalnya FlatLaf), tunggu persetujuan tim dan dosen dulu.
 
-## Menyiapkan demo lokal (Windows)
+Dokumen keputusan RT-026: [`docs/RT-026-kebutuhan-desktop.md`](docs/RT-026-kebutuhan-desktop.md)
 
-1. Nyalakan MySQL di XAMPP. Buat database dengan mengimpor `database/migrations/schema.sql`, lalu `database/migrations/seed.sql` melalui phpMyAdmin. Seed hanya dijalankan satu kali pada database kosong.
-2. Salin konfigurasi backend dan sesuaikan `DB_USER` serta `DB_PASSWORD` jika konfigurasi MySQL berbeda:
+## Persyaratan
 
-   ```powershell
-   Copy-Item backend\.env.example backend\.env
-   ```
-3. Buka terminal di folder `SISTEM-RT-RW`, lalu jalankan server web dan API:
+- **JDK 11 atau lebih baru** (kode dikompilasi dengan `--release 11`, sudah dicoba di JDK 21)
+- Backend API berjalan, **atau** pakai API tiruan di bawah ini
 
-   ```powershell
-   php -S 127.0.0.1:8000 -t web backend/public/router.php
-   ```
+## Mulai cepat (tanpa backend)
 
-   Jangan tutup terminal ini. Web dapat dibuka di `http://127.0.0.1:8000/`.
-   API dapat dicek di `http://127.0.0.1:8000/backend/public/api/v1/health`.
-4. Di terminal kedua, masuk ke folder `SISTEM-RT-RW\desktop`. Pastikan `config.properties` menunjuk ke API lokal:
+```bash
+./mock-server.sh      # terminal 1: API tiruan di http://127.0.0.1:8000 (data dummy)
+./run.sh              # terminal 2: jalankan aplikasi (build otomatis bila perlu)
+```
 
-   ```properties
-   api.base.url=http://127.0.0.1:8000/backend/public/api/v1
-   ```
+Di Windows: `mock-server.bat` lalu `run.bat` (skrip `.bat` belum dicoba di Windows, mohon dilaporkan bila ada masalah).
 
-   Jalankan aplikasi:
+Akun uji: `admin@rtrw.test` / `admin123` (peran Bendahara). Akun `warga@rtrw.test` / `warga123` sengaja ditolak karena warga memakai aplikasi Mobile.
 
-   ```powershell
-   .\run.bat
-   ```
+## Menghubungkan ke backend sebenarnya
 
-5. Login dengan akun demo seed:
+1. Isi **Alamat server** di halaman login (misalnya `http://localhost:8000`). Alamat tersimpan otomatis ke `config.properties`.
+2. Atau salin `config.properties.example` menjadi `config.properties` dan ubah isinya. Argumen `--url=...` juga bisa dipakai: `./run.sh --url=https://rtrw.example.com`.
 
-   ```text
-   Email: adminrw@contoh.test
-   Kata sandi: Password123
-   ```
+`config.properties` tidak ikut di-commit. Jangan simpan password atau token di sana. Token hanya disimpan di memori selama aplikasi berjalan.
 
-   Akun demo lain tercantum di `database/migrations/README.md`. Untuk demo, desktop dan web memakai akun/database yang sama.
+## Perintah
 
-## Menjalankan di Linux/macOS
+| Perintah | Fungsi |
+|---|---|
+| `./build.sh` | Kompilasi dan buat `out/rtrw-desktop.jar` |
+| `./run.sh` | Jalankan aplikasi |
+| `./test.sh` | Jalankan 27 pengujian otomatis (JSON, parser respons, klien API vs API tiruan) |
+| `./mock-server.sh [port]` | Jalankan API tiruan |
 
-Siapkan database dan `backend/.env` seperti langkah di atas. Dari folder `SISTEM-RT-RW`, jalankan server PHP dengan perintah yang sama; dari folder `desktop/`, jalankan `./run.sh`.
+## Fitur saat ini
 
-## Endpoint yang dipakai
+| Menu | Endpoint | Fungsi | Fitur di Daftar Fitur |
+|---|---|---|---|
+| Login | `POST /api/login` | Masuk, token dan cookie sesi dibaca otomatis | (akses) |
+| Beranda | `GET /api/residents`, `GET /api/invoices` | Jumlah warga, tagihan lunas/belum, persentase pelunasan | F-015 (versi ringkas) |
+| Data Warga | `GET`, `POST /api/residents` | Daftar, cari, tambah warga | F-004 |
+| Tagihan | `GET /api/invoices` | Daftar tagihan dan status | F-009 |
+| Pembayaran | `GET /api/payments`, `POST /api/payments/verify` | Daftar dan verifikasi (terima/tolak) oleh bendahara | F-010, F-011 |
+| Pengumuman | `GET /api/announcements` | Daftar pengumuman | F-017 |
+| Laporan | `GET /api/reports` | Daftar laporan | F-016 |
+| Semua tabel | - | Cari, urutkan kolom, **Ekspor CSV** (terbaca di Excel), **Cetak**, detail baris (klik dua kali) | F-016 |
+| Tema | - | Mode terang/gelap, pilihan diingat | F-027 |
 
-- `POST /auth/login` - email/telepon dan kata sandi
-- `GET /dashboard/summary`
-- `GET /announcements?limit=5`
-- `GET /notifications?limit=5`
-- `POST /auth/logout`
+Status berwarna mengikuti desain UI/UX: hijau (selesai), kuning (menunggu), merah (ditolak/menunggak). Sesi yang berakhir (HTTP 401) otomatis kembali ke halaman login.
 
-URL endpoint di atas ditambahkan ke `api.base.url`. Endpoint API lain untuk CRUD modul belum tersedia, jadi menu Data Warga, Iuran, Pembayaran, Pengumuman, dan Laporan masih berupa placeholder. Desktop tidak memakai mode mock/offline; demo memerlukan backend dan database yang sudah disiapkan.
+Belum ada (bisa ditambah, lihat bagian "Menambah halaman"): mutasi warga, surat, kas, kategori iuran, audit log, sesi/perangkat, multi-RT/RW, backup, notifikasi, kegiatan, pengaduan, kontak darurat, survei. Ekspor PDF dan XLSX asli membutuhkan library, jadi sementara memakai CSV dan cetak. Ini perlu persetujuan tim dan dosen bila ingin ditambah.
 
-## Pengembangan
+## Asumsi kontrak API (WAJIB dicocokkan dengan Dimas)
 
-- Semua permintaan jaringan dijalankan melalui `SwingWorker`, bukan di UI thread.
-- Tambahkan pemanggilan endpoint lewat kelas di package `api` dan gunakan `ApiClient`.
-- Salin `config.example.properties` menjadi `config.properties` bila file konfigurasi belum tersedia; jangan commit konfigurasi lokal.
-- Branch: `feature/desktop-<nama-fitur>`, Pull Request ke `develop`.
+`documentation/API/` belum saya lihat, jadi bagian berikut adalah **asumsi**. Semuanya terpusat sehingga mudah diubah.
+
+| Asumsi | Lokasi perubahan |
+|---|---|
+| Respons berbentuk `{"success":true,"message":"...","data":[...]}`. Daftar boleh di akar, di `data`, atau di `data.items`. Kegagalan: `{"success":false,"message":"..."}` atau HTTP 4xx/5xx | `api/ApiData.java` |
+| Login: body `{"email": "...", "password": "..."}` (nama kolom di `api.login.field`). Respons memuat `token` dan `user` (di akar atau di `data`) | `ApiClient.login`, `config.properties` |
+| Token dikirim sebagai `Authorization: Bearer <token>`. Cookie sesi PHP juga disimpan otomatis | `api/ApiClient.java` |
+| Peran dibaca dari `user.peran` / `role` / `nama_peran`; peran `warga` ditolak | `ApiClient.userRole`, `desktop.blocked.roles` |
+| `GET /api/payments` ada (daftar pembayaran); `GET /api/announcements` dan `GET /api/reports` mengembalikan daftar | `ui/MainFrame.java` |
+| Verifikasi: `POST /api/payments/verify` body `{"id":..., "status":"diterima"\|"ditolak", "catatan":"..."}` | `ui/PaymentsPanel.java` |
+| Tambah warga: body `{nik, nama, no_kk, alamat, telepon}` | `FORM_FIELDS` di `ui/ResidentsPanel.java` |
+| Status tagihan lunas = kolom berisi kata "status" yang memuat "lunas" tanpa "belum" | `DashboardPanel.isPaid` |
+| Kolom tabel dibuat otomatis dari kunci JSON; kunci berisi `password`, `token`, `hash`, `secret` disembunyikan | `DataTablePanel` |
+
+## Struktur
+
+```
+desktop/
+├── src/main/java/id/rtrw/desktop/
+│   ├── Main.java
+│   ├── api/       Json, ApiClient, ApiData, ApiException
+│   ├── config/    AppConfig (config.properties)
+│   ├── ui/        LoginFrame, MainFrame, DashboardPanel, DataTablePanel,
+│   │              ResidentsPanel, PaymentsPanel, Theme, FlatButton, UiKit
+│   └── util/      CsvExporter
+├── src/dev/java/…/dev/MockServer.java     API tiruan (hanya untuk pengembangan)
+├── src/test/java/…/TestRunner.java        pengujian tanpa framework
+├── build.sh / run.sh / test.sh / mock-server.sh   (+ versi .bat)
+├── config.properties.example
+└── docs/RT-026-kebutuhan-desktop.md
+```
+
+## Menambah halaman baru
+
+Halaman daftar baru cukup dua baris di `ui/MainFrame.java`:
+
+1. Tambahkan menu di blok `static`: `MENU.put("kas", "Kas");`
+2. Tambahkan `case` di `page(...)`:
+
+```java
+case "kas":
+    page = new DataTablePanel(api, "Kas", "Kas masuk dan pengeluaran.", "/api/cash", this);
+    break;
+```
+
+Kolom tabel, pencarian, ekspor CSV, cetak, dan penanganan sesi sudah otomatis. Untuk aksi khusus (tambah/ubah/verifikasi), turunkan `DataTablePanel` seperti `ResidentsPanel` dan `PaymentsPanel`, lalu tambahkan tombol dengan `addAction(...)` dan kirim data dengan `postAsync(...)`.
+
+## Membuat paket aplikasi (RT-027)
+
+Jar siap pakai di mesin yang punya Java: `java -jar out/rtrw-desktop.jar`.
+
+Untuk paket yang bisa diinstal tanpa Java terpisah, JDK 14+ menyediakan `jpackage` (belum dicoba di proyek ini):
+
+```bash
+./build.sh
+jpackage --type app-image --name "Aplikasi RT RW" --input out --main-jar rtrw-desktop.jar --main-class id.rtrw.desktop.Main
+```
+
+Untuk installer `.exe`/`.msi` di Windows, `jpackage` membutuhkan WiX Toolset. Jalankan di Windows (`--type exe`).
+
+## Keamanan
+
+- Tidak ada kredensial di kode atau di repo. Token hanya di memori dan dihapus saat keluar.
+- Kolom sensitif (`password`, `token`, dst.) tidak ditampilkan di tabel.
+- CSV melindungi dari rumus berbahaya di Excel (sel yang diawali `=`, `+`, `-`, `@` diberi tanda petik).
+- Gunakan **HTTPS** untuk server produksi (RT-033). Dengan `http://`, kata sandi dan token terkirim tanpa enkripsi.
+- Hak akses sebenarnya diperiksa backend. Desktop hanya menampilkan pesan bila server menolak (HTTP 403).
+- Gunakan data dummy, bukan data warga asli, untuk pengembangan dan demo.
+
+## Alur kerja Git (sesuai kesepakatan tim)
+
+Clone, `git switch develop && git pull origin develop`, buat branch fitur, uji, commit, push, Pull Request ke `develop`, minimal satu reviewer, merge. Jangan kerja langsung di `main` atau `develop`, dan jangan `git push --force`.
+
+Contoh branch: `feature/desktop-login`, `feature/desktop-dashboard`, `feature/desktop-payments`, `fix/desktop-csv-export`.
+Contoh commit: `feat(desktop): tambah verifikasi pembayaran`.
+
+## Pembagian tugas tim desktop (usulan)
+
+| Anggota | Fokus |
+|---|---|
+| Taufiq (Leader) | Klien API, login dan sesi, integrasi dengan backend, paket aplikasi, review PR |
+| Fachry | Antarmuka halaman sesuai desain UI/UX: form tambah/ubah, halaman baru, tema |
+| Umam | Pengujian (`TestRunner`, uji manual per peran), dokumentasi teknis, bantuan integrasi |

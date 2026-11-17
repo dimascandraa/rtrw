@@ -1,6 +1,5 @@
 @echo off
-if not exist out mkdir out
-dir /s /b src\*.java > sources.txt
-javac -encoding UTF-8 -d out @sources.txt
-if errorlevel 1 exit /b 1
-java -cp out app.Main
+rem Menjalankan aplikasi desktop. Opsi: run.bat --url=http://alamat-server
+cd /d "%~dp0"
+if not exist out\rtrw-desktop.jar call build.bat
+java -jar out\rtrw-desktop.jar %*

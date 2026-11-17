@@ -4,3 +4,4 @@ set -euo pipefail
 cd "$(dirname "$0")"
 [ -f out/rtrw-desktop.jar ] || ./build.sh
 exec java -jar out/rtrw-desktop.jar "$@"
+ 

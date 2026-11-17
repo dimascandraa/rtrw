@@ -2,15 +2,15 @@ package api;
 
 import app.AppConfig;
 import util.Json;
-import util.SessionManager;
 
 import java.io.IOException;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -19,7 +19,9 @@ import java.util.Map;
  * Method di sini bersifat blocking, jadi panggil dari SwingWorker, bukan dari UI thread.
  */
 public final class ApiClient {
+    private static final CookieManager COOKIES = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
     private static final HttpClient HTTP = HttpClient.newBuilder()
+            .cookieHandler(COOKIES)
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
@@ -53,10 +55,6 @@ public final class ApiClient {
             throw new ApiException("URL API tidak valid. Periksa api.base.url di config.properties");
         }
 
-        if (SessionManager.getToken() != null) {
-            rb.header("Authorization", "Bearer " + SessionManager.getToken());
-        }
-
         if (body != null) {
             rb.header("Content-Type", "application/json");
             rb.method(method, HttpRequest.BodyPublishers.ofString(Json.stringify(body)));
@@ -75,20 +73,40 @@ public final class ApiClient {
         }
 
         String text = res.body() == null ? "" : res.body().trim();
-        Map<String, Object> json = Collections.emptyMap();
-        if (!text.isEmpty()) {
-            try {
-                json = Json.parseObject(text);
-            } catch (IllegalArgumentException e) {
-                if (res.statusCode() < 400) throw new ApiException("Respons server bukan JSON yang valid");
-            }
+        Map<String, Object> json;
+        try {
+            json = Json.parseObject(text);
+        } catch (IllegalArgumentException e) {
+            throw new ApiException("API mengirim respons yang tidak valid.", res.statusCode());
         }
 
         if (res.statusCode() >= 400) {
-            Object msg = json.get("message");
-            throw new ApiException(msg != null ? msg.toString() : "Server menjawab HTTP " + res.statusCode(),
+            Object errorObject = json.get("error");
+            Map<String, Object> error = errorObject instanceof Map
+                    ? toStringKeyedMap(errorObject)
+                    : json;
+            Object message = error.get("message");
+            throw new ApiException(message == null
+                    ? "API menjawab HTTP " + res.statusCode()
+                    : message.toString(), res.statusCode());
+        }
+
+        Object data = json.get("data");
+        if (!(data instanceof Map<?, ?>)) {
+            throw new ApiException("Format respons API tidak sesuai: properti data tidak ditemukan.",
                     res.statusCode());
         }
-        return json;
+        return toStringKeyedMap(data);
+    }
+
+    private static Map<String, Object> toStringKeyedMap(Object value) {
+        Map<?, ?> source = (Map<?, ?>) value;
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : source.entrySet()) {
+            if (entry.getKey() instanceof String) {
+                result.put((String) entry.getKey(), entry.getValue());
+            }
+        }
+        return result;
     }
 }

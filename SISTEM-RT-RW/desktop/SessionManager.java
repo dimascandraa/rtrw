@@ -2,24 +2,20 @@ package util;
 
 import model.User;
 
-/** Menyimpan token login dan data pengguna selama aplikasi berjalan. */
+/** Menyimpan data pengguna selama aplikasi berjalan; cookie sesi dikelola ApiClient. */
 public final class SessionManager {
-    private static String token;
     private static User user;
 
     private SessionManager() {}
 
-    public static void start(String token, User user) {
-        SessionManager.token = token;
+    public static void start(User user) {
         SessionManager.user = user;
     }
 
     public static void clear() {
-        token = null;
         user = null;
     }
 
     public static boolean isLoggedIn() { return user != null; }
-    public static String getToken() { return token; }
     public static User getUser() { return user; }
 }

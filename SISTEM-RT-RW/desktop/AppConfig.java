@@ -7,7 +7,7 @@ import java.util.Properties;
 
 /**
  * Membaca konfigurasi dari file config.properties (di folder desktop/).
- * File itu TIDAK di-commit. Salin dari config.example.properties.
+ * File itu berisi URL API untuk server pengembangan.
  */
 public final class AppConfig {
     private static final Properties PROPS = new Properties();
@@ -22,14 +22,11 @@ public final class AppConfig {
 
     private AppConfig() {}
 
-    /** URL dasar backend, tanpa garis miring di akhir. */
+    /** URL dasar API, tanpa garis miring di akhir. */
     public static String baseUrl() {
-        String url = PROPS.getProperty("api.base.url", "http://localhost/SISTEM-RT-RW/backend").trim();
+        String url = PROPS.getProperty(
+                "api.base.url",
+                "http://127.0.0.1:8000/backend/public/api/v1").trim();
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-    }
-
-    /** true = pakai data tiruan, tidak memanggil backend. */
-    public static boolean mockMode() {
-        return Boolean.parseBoolean(PROPS.getProperty("mock.mode", "true").trim());
     }
 }

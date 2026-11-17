@@ -2,7 +2,6 @@ package ui;
 
 import api.ApiException;
 import api.AuthApi;
-import app.AppConfig;
 import model.User;
 
 import javax.swing.BorderFactory;
@@ -49,9 +48,9 @@ public class LoginFrame extends JFrame {
         form.add(title, c);
 
         c.gridwidth = 1;
-        c.gridy = 1; c.gridx = 0; form.add(new JLabel("Username"), c);
+        c.gridy = 1; c.gridx = 0; form.add(new JLabel("Email / telepon"), c);
         c.gridx = 1; form.add(usernameField, c);
-        c.gridy = 2; c.gridx = 0; form.add(new JLabel("Password"), c);
+        c.gridy = 2; c.gridx = 0; form.add(new JLabel("Kata sandi"), c);
         c.gridx = 1; form.add(passwordField, c);
 
         c.gridy = 3; c.gridx = 0; c.gridwidth = 2;
@@ -61,13 +60,12 @@ public class LoginFrame extends JFrame {
         c.gridy = 4;
         form.add(statusLabel, c);
 
-        if (AppConfig.mockMode()) {
-            JLabel hint = new JLabel("<html><center>MODE MOCK aktif<br>admin / admin123</center></html>",
-                    SwingConstants.CENTER);
-            hint.setForeground(Color.GRAY);
-            c.gridy = 5;
-            form.add(hint, c);
-        }
+        JLabel hint = new JLabel(
+                "<html><center>Demo: adminrw@contoh.test<br>Kata sandi: Password123</center></html>",
+                SwingConstants.CENTER);
+        hint.setForeground(Color.GRAY);
+        c.gridy = 5;
+        form.add(hint, c);
 
         setContentPane(form);
         getRootPane().setDefaultButton(loginButton); // tombol Enter = Masuk
@@ -75,11 +73,11 @@ public class LoginFrame extends JFrame {
     }
 
     private void doLogin() {
-        String username = usernameField.getText().trim();
+        String identity = usernameField.getText().trim();
         String password = new String(passwordField.getPassword());
 
-        if (username.isEmpty() || password.isEmpty()) {
-            showError("Username dan password wajib diisi");
+        if (identity.isEmpty() || password.isEmpty()) {
+            showError("Email/telepon dan kata sandi wajib diisi.");
             return;
         }
 
@@ -87,7 +85,7 @@ public class LoginFrame extends JFrame {
         new SwingWorker<User, Void>() {
             @Override
             protected User doInBackground() throws Exception {
-                return AuthApi.login(username, password); // jalan di thread terpisah
+                return AuthApi.login(identity, password);
             }
 
             @Override
@@ -98,6 +96,7 @@ public class LoginFrame extends JFrame {
                     dispose();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+                    setBusy(false);
                 } catch (ExecutionException e) {
                     Throwable cause = e.getCause();
                     showError(cause instanceof ApiException

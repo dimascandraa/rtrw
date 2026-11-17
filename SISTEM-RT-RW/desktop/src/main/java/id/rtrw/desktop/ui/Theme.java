@@ -43,8 +43,8 @@ public final class Theme {
     private static void apply() {
         UIManager.put("control", bg());
         UIManager.put("info", surface());
-        UIManager.put("nimbusBase", dark ? rgb(0x2F6F55) : rgb(0x1F6B4A));
-        UIManager.put("nimbusBlueGrey", dark ? rgb(0x3A4A42) : rgb(0xAAB8B0));
+        UIManager.put("nimbusBase", primary());
+        UIManager.put("nimbusBlueGrey", dark ? rgb(0x354640) : rgb(0xAAB5B1));
         UIManager.put("nimbusLightBackground", surface());
         UIManager.put("nimbusSelectionBackground", primary());
         UIManager.put("nimbusSelectedText", Color.WHITE);
@@ -65,58 +65,74 @@ public final class Theme {
     }
 
     public static Color bg() {
-        return dark ? rgb(0x121A16) : rgb(0xF3F6F4);
+        return dark ? rgb(0x0E1714) : rgb(0xF2F3F2);
     }
 
     public static Color surface() {
-        return dark ? rgb(0x1B2620) : Color.WHITE;
+        return dark ? rgb(0x182320) : Color.WHITE;
     }
 
     public static Color stripe() {
-        return dark ? rgb(0x202D26) : rgb(0xF6F9F7);
+        return dark ? rgb(0x1D2A26) : rgb(0xFAFBFA);
     }
 
     public static Color header() {
-        return dark ? rgb(0x26352D) : rgb(0xE6EEE9);
+        return dark ? rgb(0x243631) : rgb(0xE2E9E7);
     }
 
     public static Color text() {
-        return dark ? rgb(0xE6EEE9) : rgb(0x1F2937);
+        return dark ? rgb(0xF3F4EF) : rgb(0x10201C);
     }
 
     public static Color muted() {
-        return dark ? rgb(0x9DB0A6) : rgb(0x6B7280);
+        return dark ? rgb(0xA8BBC1) : rgb(0x64737B);
     }
 
     public static Color border() {
-        return dark ? rgb(0x2C3A33) : rgb(0xDCE3DF);
+        return dark ? rgb(0x2B3C37) : rgb(0xD9DEDC);
     }
 
     public static Color primary() {
-        return dark ? rgb(0x3E9B72) : rgb(0x1F6B4A);
+        return dark ? rgb(0x66A394) : rgb(0x31594F);
     }
 
     public static Color accent() {
-        return rgb(0xF2B705);
+        return rgb(0xDEAD43);
     }
 
     public static Color sidebar() {
-        return dark ? rgb(0x0C1411) : rgb(0x1B4D38);
+        return dark ? rgb(0x17221F) : Color.WHITE;
     }
 
     public static Color sidebarText() {
-        return rgb(0xE8F1EC);
+        return dark ? rgb(0xA8BBC1) : rgb(0x49565D);
+    }
+
+    public static Color sidebarSelected() {
+        return dark ? rgb(0x243631) : rgb(0xE1E9E6);
+    }
+
+    public static Color sidebarHover() {
+        return dark ? rgb(0x1E2D28) : rgb(0xF0F3F2);
+    }
+
+    public static Color brand() {
+        return rgb(0x214B40);
+    }
+
+    public static Color primaryText() {
+        return dark ? rgb(0x10201C) : Color.WHITE;
     }
 
     public static Color success() {
-        return dark ? rgb(0x5BC08E) : rgb(0x1E8E57);
+        return dark ? rgb(0x66C49B) : rgb(0x24845C);
     }
 
     public static Color warning() {
-        return dark ? rgb(0xF2C94C) : rgb(0xB7791F);
+        return dark ? rgb(0xE5BE62) : rgb(0xB17B19);
     }
 
     public static Color danger() {
-        return dark ? rgb(0xF2766B) : rgb(0xC53030);
+        return dark ? rgb(0xF27C72) : rgb(0xBE3F3A);
     }
 }

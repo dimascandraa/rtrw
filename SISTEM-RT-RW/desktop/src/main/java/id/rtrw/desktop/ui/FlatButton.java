@@ -76,7 +76,7 @@ public final class FlatButton extends JButton {
             fg = Theme.muted();
         } else if (kind == Kind.PRIMARY) {
             fill = hover ? mix(Theme.primary(), Color.WHITE, 0.14f) : Theme.primary();
-            fg = Color.WHITE;
+            fg = Theme.primaryText();
         } else if (kind == Kind.DANGER) {
             fill = hover ? mix(Theme.danger(), Color.WHITE, 0.14f) : Theme.danger();
             fg = Color.WHITE;

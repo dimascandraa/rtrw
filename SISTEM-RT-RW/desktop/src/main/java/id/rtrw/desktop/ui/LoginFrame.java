@@ -218,7 +218,7 @@ public final class LoginFrame extends JFrame {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2.setPaint(new GradientPaint(0, 0, Theme.sidebar(), getWidth(), getHeight(), Theme.primary()));
+            g2.setPaint(new GradientPaint(0, 0, Theme.brand(), getWidth(), getHeight(), Theme.brand()));
             g2.fillRect(0, 0, getWidth(), getHeight());
 
             g2.setColor(new Color(255, 255, 255, 18));

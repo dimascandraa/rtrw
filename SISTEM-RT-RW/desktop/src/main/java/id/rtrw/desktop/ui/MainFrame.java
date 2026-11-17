@@ -8,10 +8,11 @@ import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -24,6 +25,7 @@ import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 /** Jendela utama: sidebar menu di kiri dan area konten di kanan. */
 public final class MainFrame extends JFrame implements SessionListener {
@@ -33,11 +35,9 @@ public final class MainFrame extends JFrame implements SessionListener {
 
     static {
         MENU.put("beranda", "Beranda");
-        MENU.put("warga", "Data Warga");
-        MENU.put("tagihan", "Tagihan");
-        MENU.put("pembayaran", "Pembayaran");
-        MENU.put("pengumuman", "Pengumuman");
-        MENU.put("laporan", "Laporan");
+        for (ModulePanel.ModuleInfo module : ModulePanel.modules()) {
+            MENU.put(module.id, module.title);
+        }
     }
 
     private final AppConfig config;
@@ -47,11 +47,17 @@ public final class MainFrame extends JFrame implements SessionListener {
     private final Map<String, JPanel> pages = new HashMap<>();
     private final Map<String, NavButton> navButtons = new HashMap<>();
     private String current;
+    private String activeModule = "beranda";
 
     public MainFrame(AppConfig config, ApiClient api, String startPage) {
+        this(config, api, startPage, "beranda");
+    }
+
+    private MainFrame(AppConfig config, ApiClient api, String startPage, String startModule) {
         super("Sistem Informasi RT/RW - Desktop");
         this.config = config;
         this.api = api;
+        this.activeModule = MENU.containsKey(startModule) ? startModule : "beranda";
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(960, 600));
@@ -63,26 +69,33 @@ public final class MainFrame extends JFrame implements SessionListener {
         content.setBackground(Theme.bg());
         add(content, BorderLayout.CENTER);
 
-        show(MENU.containsKey(startPage) ? startPage : "beranda");
+        show(MENU.containsKey(startPage) || isFeaturePage(startPage) ? startPage : "beranda");
     }
 
     // ------------------------------------------------------------------ sidebar
 
     private JPanel buildSidebar() {
-        JPanel side = new JPanel();
+        JPanel side = new JPanel(new BorderLayout());
         side.setBackground(Theme.sidebar());
         side.setPreferredSize(new Dimension(230, 0));
-        side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS));
-        side.setBorder(new EmptyBorder(22, 14, 16, 14));
+        JPanel branding = new JPanel();
+        branding.setOpaque(false);
+        branding.setLayout(new BoxLayout(branding, BoxLayout.Y_AXIS));
+        branding.setBorder(new EmptyBorder(22, 14, 16, 14));
 
         JLabel logo = UiKit.label("RT/RW", 26f, true, Theme.accent());
         logo.setAlignmentX(LEFT_ALIGNMENT);
         JLabel sub = UiKit.label("Desktop Pengurus", 12f, false, Theme.sidebarText());
         sub.setAlignmentX(LEFT_ALIGNMENT);
-        side.add(logo);
-        side.add(sub);
-        side.add(Box.createVerticalStrut(24));
+        branding.add(logo);
+        branding.add(sub);
+        branding.add(Box.createVerticalStrut(12));
+        side.add(branding, BorderLayout.NORTH);
 
+        JPanel navigation = new JPanel();
+        navigation.setOpaque(false);
+        navigation.setLayout(new BoxLayout(navigation, BoxLayout.Y_AXIS));
+        navigation.setBorder(new EmptyBorder(4, 14, 8, 14));
         for (Map.Entry<String, String> item : MENU.entrySet()) {
             NavButton button = new NavButton(item.getValue());
             button.setAlignmentX(LEFT_ALIGNMENT);
@@ -93,32 +106,44 @@ public final class MainFrame extends JFrame implements SessionListener {
                 }
             });
             navButtons.put(item.getKey(), button);
-            side.add(button);
-            side.add(Box.createVerticalStrut(4));
+            navigation.add(button);
+            navigation.add(Box.createVerticalStrut(4));
         }
 
-        side.add(Box.createVerticalGlue());
+        JScrollPane navigationScroll = new JScrollPane(navigation,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        navigationScroll.setBorder(null);
+        navigationScroll.setOpaque(false);
+        navigationScroll.getViewport().setOpaque(false);
+        navigationScroll.getVerticalScrollBar().setUnitIncrement(18);
+        side.add(navigationScroll, BorderLayout.CENTER);
 
-        JLabel name = UiKit.label(api.userName(), 14f, true, Color.WHITE);
+        JPanel profile = new JPanel();
+        profile.setOpaque(false);
+        profile.setLayout(new BoxLayout(profile, BoxLayout.Y_AXIS));
+        profile.setBorder(new EmptyBorder(12, 14, 16, 14));
+        JLabel name = UiKit.label(api.userName(), 14f, true, Theme.text());
         name.setAlignmentX(LEFT_ALIGNMENT);
         String roleText = api.userRole().isEmpty() ? "Masuk" : api.userRole();
         JLabel role = UiKit.label(roleText, 12f, false, Theme.sidebarText());
         role.setAlignmentX(LEFT_ALIGNMENT);
-        side.add(name);
-        side.add(role);
-        side.add(Box.createVerticalStrut(12));
+        profile.add(name);
+        profile.add(role);
+        profile.add(Box.createVerticalStrut(12));
 
         FlatButton theme = new FlatButton(Theme.isDark() ? "Mode Terang" : "Mode Gelap", FlatButton.Kind.NEUTRAL);
         theme.setAlignmentX(LEFT_ALIGNMENT);
         theme.setMaximumSize(new Dimension(Integer.MAX_VALUE, theme.getPreferredSize().height));
         theme.addActionListener(e -> toggleTheme());
-        FlatButton logout = new FlatButton("Keluar", FlatButton.Kind.DANGER);
+        FlatButton logout = new FlatButton("Keluar", FlatButton.Kind.NEUTRAL);
         logout.setAlignmentX(LEFT_ALIGNMENT);
         logout.setMaximumSize(new Dimension(Integer.MAX_VALUE, logout.getPreferredSize().height));
         logout.addActionListener(e -> logout(null));
-        side.add(theme);
-        side.add(Box.createVerticalStrut(8));
-        side.add(logout);
+        profile.add(theme);
+        profile.add(Box.createVerticalStrut(8));
+        profile.add(logout);
+        side.add(profile, BorderLayout.SOUTH);
         return side;
     }
 
@@ -130,24 +155,47 @@ public final class MainFrame extends JFrame implements SessionListener {
             return page;
         }
         switch (key) {
-            case "warga":
+            case "beranda":
+                page = new ModulePanel(api, null, this::openFeature);
+                break;
+            case "reports":
+            case "residents":
+            case "finance":
+            case "letters":
+            case "services":
+            case "communications":
+            case "activities":
+            case "safety":
+            case "access":
+            case "account-security":
+            case "platform":
+                page = new ModulePanel(api, ModulePanel.module(key), this::openFeature);
+                break;
+            case "resident-list":
                 page = new ResidentsPanel(api, this);
                 break;
-            case "tagihan":
+            case "invoice-list":
                 page = new DataTablePanel(api, "Tagihan",
                         "Tagihan iuran per keluarga beserta status pembayarannya.", "/api/invoices", this);
                 break;
-            case "pembayaran":
+            case "payment-list":
+                page = new DataTablePanel(api, "Pembayaran",
+                        "Riwayat pembayaran iuran warga.", "/api/payments", this);
+                break;
+            case "payment-verification":
                 page = new PaymentsPanel(api, this);
                 break;
-            case "pengumuman":
+            case "announcement-list":
                 page = new DataTablePanel(api, "Pengumuman",
                         "Pengumuman RT/RW untuk warga.", "/api/announcements", this);
                 break;
-            case "laporan":
+            case "report-list":
                 page = new DataTablePanel(api, "Laporan",
                         "Daftar laporan kas, iuran, dan tunggakan. Gunakan Ekspor CSV untuk membuka di Excel.",
                         "/api/reports", this);
+                break;
+            case "dashboard-stats":
+                page = new DashboardPanel(api, this);
                 break;
             default:
                 page = new DashboardPanel(api, this);
@@ -160,20 +208,40 @@ public final class MainFrame extends JFrame implements SessionListener {
     private void show(String key) {
         JPanel page = page(key);
         current = key;
+        if (MENU.containsKey(key)) {
+            activeModule = key;
+        }
         cards.show(content, key);
         for (Map.Entry<String, NavButton> e : navButtons.entrySet()) {
-            e.getValue().setSelected(e.getKey().equals(key));
+            e.getValue().setSelected(e.getKey().equals(activeModule));
         }
         if (page instanceof Refreshable) {
             ((Refreshable) page).refresh();
         }
     }
 
+    private void openFeature(String moduleKey, String featureKey) {
+        if (!MENU.containsKey(moduleKey)) {
+            return;
+        }
+        if (featureKey == null) {
+            show(moduleKey);
+            return;
+        }
+        activeModule = moduleKey;
+        show(featureKey);
+    }
+
+    private static boolean isFeaturePage(String key) {
+        return key != null && (key.endsWith("-list") || key.equals("payment-verification")
+                || key.equals("dashboard-stats"));
+    }
+
     // ------------------------------------------------------------------ sesi dan tema
 
     private void toggleTheme() {
         Theme.toggle();
-        MainFrame next = new MainFrame(config, api, current);
+        MainFrame next = new MainFrame(config, api, current, activeModule);
         next.setBounds(getBounds());
         next.setExtendedState(getExtendedState());
         next.setVisible(true);
@@ -235,14 +303,10 @@ public final class MainFrame extends JFrame implements SessionListener {
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             Rectangle r = new Rectangle(0, 0, getWidth(), getHeight());
             if (selected || hover) {
-                g2.setColor(new Color(255, 255, 255, selected ? 34 : 16));
+                g2.setColor(selected ? Theme.sidebarSelected() : Theme.sidebarHover());
                 g2.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
             }
-            if (selected) {
-                g2.setColor(Theme.accent());
-                g2.fillRoundRect(0, 8, 4, r.height - 16, 4, 4);
-            }
-            g2.setColor(selected ? Color.WHITE : Theme.sidebarText());
+            g2.setColor(selected ? Theme.text() : Theme.sidebarText());
             g2.setFont(getFont().deriveFont(selected ? Font.BOLD : Font.PLAIN, 14f));
             int y = (r.height - g2.getFontMetrics().getHeight()) / 2 + g2.getFontMetrics().getAscent();
             g2.drawString(text, 18, y);

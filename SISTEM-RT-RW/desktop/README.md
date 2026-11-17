@@ -17,6 +17,45 @@ Dokumen keputusan RT-026: [`docs/RT-026-kebutuhan-desktop.md`](docs/RT-026-kebut
 - **JDK 11 atau lebih baru** (kode dikompilasi dengan `--release 11`, sudah dicoba di JDK 21)
 - Backend API berjalan, **atau** pakai API tiruan di bawah ini
 
+## Cara menjalankan di Windows
+
+1. Pastikan JDK 11 atau lebih baru terpasang. Buka PowerShell atau Command Prompt dan cek:
+
+   ```powershell
+   java -version
+   javac -version
+   ```
+
+   Keduanya harus menampilkan versi 11 atau lebih baru. Jika perintah tidak ditemukan, pasang JDK dan tambahkan folder `bin` JDK ke `PATH`.
+
+2. Buka terminal pertama, lalu jalankan API tiruan dari folder `desktop`:
+
+   ```powershell
+   cd C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop
+   .\mock-server.bat
+   ```
+
+   API tiruan berjalan di `http://127.0.0.1:8000` dan menyediakan data dummy. Biarkan terminal ini tetap terbuka.
+
+3. Buka terminal kedua pada folder yang sama dan jalankan aplikasi:
+
+   ```powershell
+   cd C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop
+   .\run.bat
+   ```
+
+   Pertama kali dijalankan, `run.bat` akan membangun aplikasi secara otomatis. Pada layar login, gunakan alamat server `http://127.0.0.1:8000`, akun `admin@rtrw.test`, dan kata sandi `admin123`.
+
+4. Untuk menghentikan API tiruan, tekan `Ctrl+C` di terminal pertama. Tutup jendela aplikasi seperti biasa.
+
+Jika sudah memiliki backend yang berjalan, lewati langkah menjalankan API tiruan. Jalankan aplikasi dengan alamat backend:
+
+```powershell
+.\run.bat --url=http://localhost:8000
+```
+
+Ganti URL dengan alamat backend Anda. URL juga dapat dimasukkan pada kolom **Alamat server** di halaman login; alamat tersebut akan disimpan untuk penggunaan berikutnya.
+
 ## Mulai cepat (tanpa backend)
 
 ```bash
@@ -24,14 +63,12 @@ Dokumen keputusan RT-026: [`docs/RT-026-kebutuhan-desktop.md`](docs/RT-026-kebut
 ./run.sh              # terminal 2: jalankan aplikasi (build otomatis bila perlu)
 ```
 
-Di Windows: `mock-server.bat` lalu `run.bat` (skrip `.bat` belum dicoba di Windows, mohon dilaporkan bila ada masalah).
-
-Akun uji: `admin@rtrw.test` / `admin123` (peran Bendahara). Akun `warga@rtrw.test` / `warga123` sengaja ditolak karena warga memakai aplikasi Mobile.
+Pada Windows, ikuti bagian [Cara menjalankan di Windows](#cara-menjalankan-di-windows). Akun uji: `admin@rtrw.test` / `admin123` (peran Bendahara). Akun `warga@rtrw.test` / `warga123` sengaja ditolak karena warga memakai aplikasi Mobile.
 
 ## Menghubungkan ke backend sebenarnya
 
 1. Isi **Alamat server** di halaman login (misalnya `http://localhost:8000`). Alamat tersimpan otomatis ke `config.properties`.
-2. Atau salin `config.properties.example` menjadi `config.properties` dan ubah isinya. Argumen `--url=...` juga bisa dipakai: `./run.sh --url=https://rtrw.example.com`.
+2. Atau salin `config.properties.example` menjadi `config.properties` dan ubah isinya. Argumen `--url=...` juga bisa dipakai: `./run.sh --url=https://rtrw.example.com` (Windows: `.\run.bat --url=https://rtrw.example.com`).
 
 `config.properties` tidak ikut di-commit. Jangan simpan password atau token di sana. Token hanya disimpan di memori selama aplikasi berjalan.
 
@@ -49,8 +86,9 @@ Akun uji: `admin@rtrw.test` / `admin123` (peran Bendahara). Akun `warga@rtrw.tes
 | Menu | Endpoint | Fungsi | Fitur di Daftar Fitur |
 |---|---|---|---|
 | Login | `POST /api/login` | Masuk, token dan cookie sesi dibaca otomatis | (akses) |
-| Beranda | `GET /api/residents`, `GET /api/invoices` | Jumlah warga, tagihan lunas/belum, persentase pelunasan | F-015 (versi ringkas) |
-| Data Warga | `GET`, `POST /api/residents` | Daftar, cari, tambah warga | F-004 |
+| Beranda dan navigasi modul | - | Beranda menampilkan 11 modul dan 26 kartu fitur sesuai rancangan UI/UX; setiap modul punya halaman katalog sendiri | Navigasi UI/UX |
+| Dashboard statistik | `GET /api/residents`, `GET /api/invoices` | Jumlah warga, tagihan lunas/belum, persentase pelunasan | F-015 (versi ringkas) |
+| Data warga | `GET`, `POST /api/residents` | Daftar, cari, tambah warga | F-004 |
 | Tagihan | `GET /api/invoices` | Daftar tagihan dan status | F-009 |
 | Pembayaran | `GET /api/payments`, `POST /api/payments/verify` | Daftar dan verifikasi (terima/tolak) oleh bendahara | F-010, F-011 |
 | Pengumuman | `GET /api/announcements` | Daftar pengumuman | F-017 |
@@ -60,7 +98,7 @@ Akun uji: `admin@rtrw.test` / `admin123` (peran Bendahara). Akun `warga@rtrw.tes
 
 Status berwarna mengikuti desain UI/UX: hijau (selesai), kuning (menunggu), merah (ditolak/menunggak). Sesi yang berakhir (HTTP 401) otomatis kembali ke halaman login.
 
-Belum ada (bisa ditambah, lihat bagian "Menambah halaman"): mutasi warga, surat, kas, kategori iuran, audit log, sesi/perangkat, multi-RT/RW, backup, notifikasi, kegiatan, pengaduan, kontak darurat, survei. Ekspor PDF dan XLSX asli membutuhkan library, jadi sementara memakai CSV dan cetak. Ini perlu persetujuan tim dan dosen bila ingin ditambah.
+Menu dan kartu katalog tersedia untuk semua 11 modul pada rancangan UI/UX. Halaman operasional yang belum memiliki endpoint desktop menampilkan pemberitahuan bahwa fitur menunggu integrasi; data tiruan tidak ditampilkan. Fitur tersebut meliputi mutasi warga, surat, kas, kategori iuran, audit log, sesi/perangkat, multi-RT/RW, backup, notifikasi, kegiatan, pengaduan, kontak darurat, dan survei. Ekspor PDF dan XLSX asli membutuhkan library, jadi sementara memakai CSV dan cetak. Ini perlu persetujuan tim dan dosen bila ingin ditambah.
 
 ## Asumsi kontrak API (WAJIB dicocokkan dengan Dimas)
 

@@ -2,7 +2,7 @@
 
 Folder ini berisi rancangan antarmuka (UI/UX) **Sistem Informasi RT/RW** milik kelompok kami. Rancangan masih berupa **draft desain** dan bukan frontend final. Isi tampilan mengikuti ERD (41 tabel) serta daftar modul yang sudah disepakati.
 
-**Status tahap ini:** desain **login, beranda, dan 11 modul (menu)**, masing-masing dalam mode terang dan gelap (26 gambar). Desain tampilan **fitur di dalam tiap modul** dikerjakan pada tahap berikutnya.
+**Status tahap ini:** desain gambar mencakup **login, beranda, dan 11 modul (menu)**, masing-masing dalam mode terang dan gelap (26 gambar). Web kini menyediakan ruang kerja untuk 26 fitur; tampilan operasional ini dikembangkan mengikuti sistem desain yang sama.
 
 ## Daftar Isi
 
@@ -190,7 +190,7 @@ Setiap modul punya halaman sendiri. Menu yang aktif ditandai pada sidebar, dan a
 ## 5. Catatan
 
 1. **Status:** semua gambar adalah **draft desain**, bukan tampilan final. Warna, tata letak, dan istilah masih bisa berubah mengikuti masukan kelompok atau dosen.
-2. **Cakupan tahap ini:** login, beranda, dan 11 halaman modul (menu). Tampilan isi 26 fitur di dalam modul **belum dirancang** dan akan menyusul.
+2. **Cakupan gambar:** login, beranda, dan 11 halaman modul (menu). Halaman ruang kerja fitur dibuat pada web dan belum memiliki set screenshot desain terpisah.
 3. **Mode tampilan:** setiap halaman tersedia dalam mode terang dan gelap.
 4. **Ukuran gambar:** diambil dalam tampilan desktop. Pada layar kecil, sidebar akan berubah menjadi menu geser.
 5. **Data contoh:** nama pengguna (Admin RT) dan wilayah (RT 03 / RW 05) hanya contoh.
@@ -202,4 +202,4 @@ Setiap modul punya halaman sendiri. Menu yang aktif ditandai pada sidebar, dan a
 | Tahap | Isi | Status |
 |---|---|---|
 | 1 | Login, beranda, dan 11 modul (terang dan gelap) | Selesai |
-| 2 | Tampilan isi tiap fitur (26 fitur) | Direncanakan |
+| 2 | Ruang kerja 26 fitur dan integrasi endpoint baca | Berjalan |

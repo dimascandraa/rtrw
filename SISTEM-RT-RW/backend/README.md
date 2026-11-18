@@ -40,22 +40,26 @@ Semua respons JSON menggunakan format `{ "data": ... }` atau `{ "error": { "code
 | `GET` | `/api/v1/dashboard/summary` | Statistik warga, keluarga, tagihan, dan kas |
 | `GET` | `/api/v1/announcements?limit=5` | Pengumuman yang terlihat di wilayah pengguna |
 | `GET` | `/api/v1/notifications?limit=5` | Notifikasi milik pengguna dan jumlah yang belum dibaca |
+| `GET` | `/api/v1/resources/{resource}` | Daftar data fitur dengan izin dan batas wilayah |
 
 Body login:
 
 ```json
 {
   "identity": "adminrw@contoh.test",
-  "password": "Password123"
+  "password": "Password123",
+  "client": "web"
 }
 ```
 
-Login membuat token acak; hanya hash SHA-256 token yang disimpan di `sesi_pengguna`. Token asli dikirim sebagai cookie `HttpOnly`, `SameSite=Lax`, dan `Secure` ketika HTTPS aktif. Kata sandi diverifikasi dengan `password_verify()`. Lima kegagalan login mengunci akun selama 15 menit.
+Web dapat menghilangkan properti `client` (default `web`); token hanya dikirim lewat cookie `HttpOnly`, `SameSite=Lax`, dan `Secure` ketika HTTPS aktif. Aplikasi native mengirim `client: "mobile"` atau `client: "desktop"` dan menerima `accessToken`. Kirim token pada setiap permintaan berikutnya dengan header `Authorization: Bearer <accessToken>`. Token native sama dengan token cookie; hanya hash SHA-256 yang disimpan di `sesi_pengguna`. Logout mencabut token yang digunakan. Kata sandi diverifikasi dengan `password_verify()`. Lima kegagalan login mengunci akun selama 15 menit.
 
-Endpoint dashboard dan pengumuman memeriksa izin pada `peran_izin_akses`/`izin_akses` dan membatasi query berdasarkan organisasi serta penugasan wilayah. Endpoint API mengembalikan error generik dan detail teknis hanya dicatat pada log server.
+Untuk aplikasi web lintas origin, isi `APP_CORS_ALLOWED_ORIGINS` pada `backend/.env` dengan daftar origin frontend yang dipisahkan koma, tanpa wildcard, misalnya `https://web.contoh.test,https://admin.contoh.test`. Biarkan kosong jika frontend satu origin. CORS memakai allowlist eksplisit dan mengizinkan header `Authorization`.
+
+Endpoint data memeriksa izin pada `peran_izin_akses`/`izin_akses`, membatasi query berdasarkan organisasi/wilayah, dan menolak data yang tidak aman untuk akses terbatas. Daftar resource, filter, dan format respons ada di [`documentation/API/README.md`](../documentation/API/README.md). Endpoint API mengembalikan error generik dan detail teknis hanya dicatat pada log server.
 
 ## Pengembangan endpoint
 
-Tambahkan endpoint berdasarkan resource dan aksi bisnis—misalnya `/warga`, `/tagihan`, atau `/pembayaran`—bukan endpoint terpisah untuk setiap halaman. Halaman dashboard boleh memakai endpoint ringkasan agregat. Saat fitur CRUD dibuat, validasi input, pemeriksaan izin, dan filter `id_organisasi` harus diterapkan di backend.
+Resource saat ini menyediakan operasi baca (`GET`). Sebelum menambah `POST`, `PATCH`, atau `DELETE`, implementasikan validasi per resource, izin aksi, isolasi `id_organisasi`, audit log, dan transaksi bisnis terkait; jangan menambah operasi tulis generik ke tabel.
 
-Saat ini login, ringkasan beranda, pengumuman, dan notifikasi sudah menggunakan API. Kartu fitur modul lain masih berupa pratinjau UI dan belum memiliki operasi CRUD.
+Web memiliki halaman ruang kerja untuk 26 fitur dan memuat data melalui API. Operasi tulis/CRUD, unggahan berkas, serta proses bisnis seperti verifikasi pembayaran dan persetujuan surat belum tersedia.

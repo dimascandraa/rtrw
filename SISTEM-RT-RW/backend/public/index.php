@@ -13,6 +13,11 @@ try {
     loadEnvironment(dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env');
     $configuration = appConfiguration();
     date_default_timezone_set($configuration['timezone']);
+    applyCorsHeaders($configuration);
+    if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
     $connection = databaseConnection();
     dispatchApi($connection, $configuration);
 } catch (DatabaseConfigurationException $exception) {

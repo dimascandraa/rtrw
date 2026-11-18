@@ -279,10 +279,32 @@ const loginScreen = document.querySelector("#login-screen");
 const navigation = document.querySelector("#main-navigation");
 const pageContent = document.querySelector("#page-content");
 const globalSearch = document.querySelector("#global-search");
-const dialog = document.querySelector("#feature-dialog");
 const toast = document.querySelector("#toast");
 let activePage = "home";
+let activeFeature = null;
+let featureRows = [];
+let featureLoading = false;
+let featureError = "";
+let featureRequestId = 0;
 let toastTimeout;
+
+const featureEndpoints = {
+  reports: ["dashboard/summary", "dashboard/summary"],
+  residents: ["resources/warga", "resources/mutasi"],
+  finance: [
+    "resources/kategori-iuran", "resources/tagihan", "resources/pembayaran",
+    "resources/pembayaran", "resources/pembayaran", "resources/transaksi-kas",
+    "resources/tagihan"
+  ],
+  letters: ["resources/jenis-surat", "resources/pengajuan-surat"],
+  services: ["resources/survei"],
+  communications: ["announcements?limit=100", "notifications?limit=100"],
+  activities: ["resources/kegiatan"],
+  safety: ["resources/pengaduan", "resources/kontak-darurat"],
+  access: ["resources/pengguna", "resources/pengguna", "resources/peran"],
+  "account-security": ["resources/audit-log", "resources/sesi"],
+  platform: ["resources/wilayah", "resources/cadangan-data"]
+};
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -514,11 +536,11 @@ function renderFeatureCards(module, query = "") {
   }
 
   return visibleFeatures.map((feature, index) => `
-    <button class="feature-card" type="button" data-feature-module="${module.id}" data-feature-index="${module.features.indexOf(feature)}" aria-label="Lihat pratinjau ${feature.title}">
+    <button class="feature-card" type="button" data-feature-module="${module.id}" data-feature-index="${module.features.indexOf(feature)}" aria-label="Buka fitur ${feature.title}">
       <span class="feature-icon" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
       <h3>${feature.title}</h3>
       <p>${feature.description}</p>
-      <span class="feature-card-footer"><span class="button button-secondary">Lihat tampilan</span><span class="feature-arrow" aria-hidden="true">→</span></span>
+      <span class="feature-card-footer"><span class="button button-secondary">Buka fitur</span><span class="feature-arrow" aria-hidden="true">→</span></span>
     </button>
   `).join("");
 }
@@ -582,14 +604,169 @@ function renderModule(module) {
     </section>
     ${module.id === "reports" && !query.trim() ? renderReportPreview() : ""}
     <section aria-label="Daftar fitur ${module.title}">
-      <div class="section-heading"><div><h2>Fitur modul</h2><p>Pilih fitur untuk melihat pratinjau dan tabel terkait.</p></div></div>
+      <div class="section-heading"><div><h2>Fitur modul</h2><p>Pilih fitur untuk membuka ruang kerja dan data terkait.</p></div></div>
       <div class="feature-grid">${renderFeatureCards(module, query)}</div>
     </section>
   `;
 }
 
+function resourcePath(moduleId, featureIndex) {
+  const endpoints = featureEndpoints[moduleId];
+  return endpoints ? endpoints[featureIndex] : null;
+}
+
+function renderWorkspaceData(module, feature, endpoint) {
+  if (featureLoading) {
+    return '<div class="empty-state" role="status">Memuat data dari API...</div>';
+  }
+  if (featureError) {
+    return `<div class="empty-state resource-error" role="alert">${escapeHtml(featureError)}</div>`;
+  }
+  if (!isConnectedToApi) {
+    return '<div class="empty-state">Masuk melalui API untuk memuat data lingkungan. Mode demo tidak mengubah atau menyimpan data.</div>';
+  }
+  if (!featureRows.length) {
+    return '<div class="empty-state">Belum ada data untuk fitur ini.</div>';
+  }
+
+  const query = (document.querySelector("#resource-search")?.value || "").trim().toLocaleLowerCase("id-ID");
+  const filteredRows = featureRows.filter((row) =>
+    Object.values(row).some((value) => String(value ?? "").toLocaleLowerCase("id-ID").includes(query))
+  );
+  if (!filteredRows.length) {
+    return '<div class="empty-state">Tidak ada data yang cocok dengan pencarian.</div>';
+  }
+
+  if (endpoint === "dashboard/summary") {
+    return `
+      <div class="resource-stat-grid">
+        ${filteredRows.map((row) => `
+          <article class="resource-stat">
+            <span>${escapeHtml(row.label)}</span>
+            <strong>${escapeHtml(row.value)}</strong>
+          </article>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  const columns = Object.keys(filteredRows[0]).slice(0, 7);
+  return `
+    <div class="resource-table-wrap">
+      <table class="resource-table">
+        <thead><tr>${columns.map((column) => `<th scope="col">${escapeHtml(column.replace(/_/g, " "))}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${filteredRows.map((row) => `
+            <tr>${columns.map((column) => `<td>${escapeHtml(row[column] === null || row[column] === "" ? "—" : row[column])}</td>`).join("")}</tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderFeatureWorkspace(module, feature, featureIndex) {
+  const endpoint = resourcePath(module.id, featureIndex);
+  const endpointText = endpoint ? `/api/v1/${endpoint.split("?")[0]}` : "Belum tersedia";
+  pageContent.innerHTML = `
+    <section class="page-heading workspace-heading">
+      <div>
+        <button class="section-link workspace-back" type="button" data-page="${module.id}">← Kembali ke ${escapeHtml(module.title)}</button>
+        <p class="eyebrow">${escapeHtml(module.title)} · Ruang kerja fitur</p>
+        <h1>${escapeHtml(feature.title)}</h1>
+        <p>${escapeHtml(feature.description)}</p>
+      </div>
+      <span class="heading-tag">${isConnectedToApi ? "Terhubung ke API" : "Mode demo"}</span>
+    </section>
+    <section class="workspace-grid">
+      <article class="panel workspace-panel">
+        <div class="panel-heading">
+          <div><h2>Data fitur</h2><p>Data dibatasi sesuai izin dan wilayah akun Anda.</p></div>
+          <button class="button button-outline" type="button" data-resource-refresh${!isConnectedToApi ? " disabled" : ""}>Muat ulang</button>
+        </div>
+        <div class="resource-toolbar">
+          <label class="resource-search-label" for="resource-search">Cari dalam data</label>
+          <input id="resource-search" class="resource-search" type="search" placeholder="Ketik kata kunci..." autocomplete="off">
+        </div>
+        <div id="resource-data" class="resource-data" aria-live="polite">
+          ${renderWorkspaceData(module, feature, endpoint)}
+        </div>
+      </article>
+      <aside class="panel workspace-aside">
+        <div class="panel-heading"><div><h2>Integrasi aplikasi</h2><p>Kontrak REST untuk web, mobile, dan desktop</p></div></div>
+        <div class="workspace-aside-content">
+          <span class="api-method">GET</span>
+          <code class="api-endpoint">${escapeHtml(endpointText)}</code>
+          <p>Gunakan respons JSON berformat <code>{ "data": { "items": [] } }</code>. Sesi web memakai cookie HttpOnly; aplikasi native dapat memakai token Bearer.</p>
+          <strong>Tabel terkait</strong>
+          <div class="table-tags">${feature.tables.map((table) => `<span class="table-tag">${escapeHtml(table)}</span>`).join("")}</div>
+        </div>
+      </aside>
+    </section>
+  `;
+
+  if (isConnectedToApi && endpoint) {
+    void loadFeatureData(module, feature, featureIndex, endpoint);
+  }
+}
+
+async function loadFeatureData(module, feature, featureIndex, endpoint) {
+  const requestId = ++featureRequestId;
+  featureLoading = true;
+  featureError = "";
+  const dataContainer = document.querySelector("#resource-data");
+  if (dataContainer) {
+    dataContainer.innerHTML = '<div class="empty-state" role="status">Memuat data dari API...</div>';
+  }
+
+  try {
+    const response = await window.RtrwApi.request(`/${endpoint}`);
+    if (requestId !== featureRequestId || !activeFeature || activeFeature.moduleId !== module.id || activeFeature.featureIndex !== featureIndex) {
+      return;
+    }
+
+    if (endpoint === "dashboard/summary") {
+      const { stats, period } = response;
+      featureRows = [
+        { label: "Warga terdaftar", value: stats.residents },
+        { label: "Kepala keluarga", value: stats.families },
+        { label: "Tagihan belum lunas", value: stats.unpaidInvoices },
+        { label: "Saldo kas", value: stats.cashBalance === null ? "Tidak tersedia" : formatRupiah(stats.cashBalance) },
+        { label: "Tagihan periode ini", value: formatRupiah(period.billed) },
+        { label: "Pembayaran terkumpul", value: formatRupiah(period.collected) }
+      ];
+    } else {
+      featureRows = Array.isArray(response.items) ? response.items : [];
+    }
+    featureLoading = false;
+    const container = document.querySelector("#resource-data");
+    if (container) {
+      container.innerHTML = renderWorkspaceData(module, feature, endpoint);
+    }
+  } catch (error) {
+    if (requestId !== featureRequestId) {
+      return;
+    }
+    featureLoading = false;
+    featureError = error.message;
+    const container = document.querySelector("#resource-data");
+    if (container) {
+      container.innerHTML = renderWorkspaceData(module, feature, endpoint);
+    }
+  }
+}
+
 function renderPage() {
   renderNavigation();
+  if (activeFeature) {
+    const module = modules.find((item) => item.id === activeFeature.moduleId);
+    const feature = module?.features[activeFeature.featureIndex];
+    if (module && feature) {
+      renderFeatureWorkspace(module, feature, activeFeature.featureIndex);
+      return;
+    }
+    activeFeature = null;
+  }
   if (activePage === "home") {
     renderHome();
     return;
@@ -608,26 +785,11 @@ function showToast(message) {
   toastTimeout = window.setTimeout(() => toast.classList.remove("visible"), 3200);
 }
 
-function openFeaturePreview(moduleId, featureIndex) {
-  const module = modules.find((item) => item.id === moduleId);
-  const feature = module?.features[featureIndex];
-  if (!module || !feature) {
-    return;
-  }
-
-  document.querySelector("#dialog-icon").textContent = module.short;
-  document.querySelector("#dialog-title").textContent = feature.title;
-  document.querySelector("#dialog-description").textContent = feature.description;
-  document.querySelector("#dialog-tables-list").innerHTML = feature.tables
-    .map((table) => `<span class="table-tag">${table}</span>`)
-    .join("");
-  dialog.showModal();
-}
-
 function showDashboard() {
   loginScreen.hidden = true;
   appShell.hidden = false;
   activePage = "home";
+  activeFeature = null;
   globalSearch.value = "";
   renderPage();
   pageContent.focus({ preventScroll: true });
@@ -793,6 +955,8 @@ document.addEventListener("click", (event) => {
   const pageButton = target.closest("[data-page]");
   if (pageButton) {
     activePage = pageButton.dataset.page;
+    activeFeature = null;
+    featureRequestId += 1;
     globalSearch.value = "";
     renderPage();
     closeMobileMenu();
@@ -801,7 +965,25 @@ document.addEventListener("click", (event) => {
 
   const featureButton = target.closest("[data-feature-module]");
   if (featureButton) {
-    openFeaturePreview(featureButton.dataset.featureModule, Number(featureButton.dataset.featureIndex));
+    activeFeature = {
+      moduleId: featureButton.dataset.featureModule,
+      featureIndex: Number(featureButton.dataset.featureIndex)
+    };
+    featureRows = [];
+    featureLoading = false;
+    featureError = "";
+    renderPage();
+    pageContent.focus({ preventScroll: true });
+    return;
+  }
+
+  if (target.closest("[data-resource-refresh]") && activeFeature) {
+    const module = modules.find((item) => item.id === activeFeature.moduleId);
+    const feature = module?.features[activeFeature.featureIndex];
+    const endpoint = resourcePath(activeFeature.moduleId, activeFeature.featureIndex);
+    if (module && feature && endpoint) {
+      void loadFeatureData(module, feature, activeFeature.featureIndex, endpoint);
+    }
     return;
   }
 
@@ -826,11 +1008,6 @@ document.addEventListener("click", (event) => {
 
   if (target.closest("#sidebar-backdrop")) {
     closeMobileMenu();
-    return;
-  }
-
-  if (target.closest("#dialog-close") || target.closest("#dialog-done")) {
-    dialog.close();
     return;
   }
 
@@ -884,15 +1061,21 @@ document.querySelector("#toggle-password").addEventListener("click", (event) => 
   event.currentTarget.setAttribute("aria-label", `${showPassword ? "Sembunyikan" : "Tampilkan"} kata sandi`);
 });
 
-dialog.addEventListener("click", (event) => {
-  if (event.target === dialog) {
-    dialog.close();
-  }
-});
-
 globalSearch.addEventListener("input", () => {
   if (!appShell.hidden) {
     renderPage();
+  }
+});
+
+pageContent.addEventListener("input", (event) => {
+  if (event.target instanceof HTMLInputElement && event.target.id === "resource-search") {
+    const container = document.querySelector("#resource-data");
+    const module = modules.find((item) => item.id === activeFeature?.moduleId);
+    const feature = module?.features[activeFeature.featureIndex];
+    const endpoint = activeFeature ? resourcePath(activeFeature.moduleId, activeFeature.featureIndex) : null;
+    if (container && module && feature && endpoint) {
+      container.innerHTML = renderWorkspaceData(module, feature, endpoint);
+    }
   }
 });
 

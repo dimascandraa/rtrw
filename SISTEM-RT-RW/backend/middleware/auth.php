@@ -35,7 +35,7 @@ function findActiveAssignment(PDO $connection, int $userId): ?array
 
 function authenticatedUser(PDO $connection): array
 {
-    $token = $_COOKIE['rtrw_session'] ?? '';
+    $token = requestAccessToken();
     if (!is_string($token) || !preg_match('/\A[a-f0-9]{64}\z/', $token)) {
         jsonError(401, 'unauthenticated', 'Silakan masuk untuk melanjutkan.');
     }
@@ -87,6 +87,32 @@ function authenticatedUser(PDO $connection): array
     $touchSession->execute(['session_id' => $user['session_id']]);
 
     return $user;
+}
+
+function requestAccessToken(): string
+{
+    $authorization = $_SERVER['HTTP_AUTHORIZATION']
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+        ?? '';
+    if ($authorization === '' && function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $name => $value) {
+                if (strtolower((string) $name) === 'authorization') {
+                    $authorization = $value;
+                    break;
+                }
+            }
+        }
+    }
+    if (is_string($authorization) && preg_match('/\ABearer ([a-f0-9]{64})\z/i', $authorization, $matches)) {
+        return strtolower($matches[1]);
+    }
+
+    $cookieToken = $_COOKIE['rtrw_session'] ?? '';
+    return is_string($cookieToken) && preg_match('/\A[a-f0-9]{64}\z/', $cookieToken)
+        ? $cookieToken
+        : '';
 }
 
 function requirePermission(PDO $connection, array $user, string $permissionCode): array

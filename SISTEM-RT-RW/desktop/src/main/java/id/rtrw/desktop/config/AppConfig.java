@@ -87,15 +87,12 @@ public final class AppConfig {
         return role != null && blockedRoles().contains(role.trim().toLowerCase(Locale.ROOT));
     }
 
-    public boolean save() {
+    public void save() throws IOException {
         if (file == null) {
-            return false;
+            throw new IOException("Berkas konfigurasi tidak tersedia.");
         }
         try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             props.store(writer, "Konfigurasi Aplikasi RT/RW Desktop. Jangan simpan password atau token di sini.");
-            return true;
-        } catch (IOException e) {
-            return false;
         }
     }
 }

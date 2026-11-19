@@ -9,6 +9,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
@@ -24,6 +25,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridLayout;
 import java.awt.RenderingHints;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
@@ -196,7 +198,15 @@ public final class LoginFrame extends JFrame {
                             + "Aplikasi desktop khusus pengurus RT/RW.", true);
                     return;
                 }
-                config.save(); // simpan alamat server untuk pemakaian berikutnya
+                try {
+                    config.save();
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(LoginFrame.this,
+                            "Login berhasil, tetapi alamat server tidak dapat disimpan. "
+                                    + "Alamat ini hanya berlaku sampai aplikasi ditutup.\n\n"
+                                    + ex.getMessage(),
+                            "Konfigurasi tidak tersimpan", JOptionPane.WARNING_MESSAGE);
+                }
                 new MainFrame(config, api, "beranda").setVisible(true);
                 dispose();
             }

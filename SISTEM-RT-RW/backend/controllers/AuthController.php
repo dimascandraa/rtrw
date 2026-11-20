@@ -140,7 +140,7 @@ function login(PDO $connection, array $configuration): void
     }
 
     $response = [
-        'user' => publicUser($user),
+        'user' => publicUser($connection, $user),
         'expiresAt' => date(DATE_ATOM, $expiresAt),
     ];
     if ($client !== 'web') {
@@ -152,7 +152,7 @@ function login(PDO $connection, array $configuration): void
 function currentUser(PDO $connection): void
 {
     $user = authenticatedUser($connection);
-    jsonSuccess(['user' => publicUser($user)]);
+    jsonSuccess(['user' => publicUser($connection, $user)]);
 }
 
 function logout(PDO $connection, array $configuration): void

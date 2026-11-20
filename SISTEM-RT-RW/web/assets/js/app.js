@@ -306,6 +306,27 @@ const featureEndpoints = {
   platform: ["resources/wilayah", "resources/cadangan-data"]
 };
 
+const resourcePermissions = {
+  warga: { code: "warga.read", supportsRestrictedAccess: true },
+  mutasi: { code: "mutasi_warga.read", supportsRestrictedAccess: true },
+  "kategori-iuran": { code: "kategori_iuran.read", supportsRestrictedAccess: false },
+  tagihan: { code: "tagihan.read", supportsRestrictedAccess: true },
+  pembayaran: { code: "pembayaran.read", supportsRestrictedAccess: true },
+  "transaksi-kas": { code: "laporan_keuangan.read", supportsRestrictedAccess: false },
+  "jenis-surat": { code: "pengajuan_surat.read", supportsRestrictedAccess: false },
+  "pengajuan-surat": { code: "pengajuan_surat.read", supportsRestrictedAccess: true },
+  survei: { code: "warga.read", supportsRestrictedAccess: true },
+  pengumuman: { code: "pengumuman.read", supportsRestrictedAccess: true },
+  kegiatan: { code: "kegiatan.read", supportsRestrictedAccess: false },
+  pengaduan: { code: "pengaduan.read", supportsRestrictedAccess: true },
+  "kontak-darurat": { code: "warga.read", supportsRestrictedAccess: true },
+  pengguna: { code: "pengguna.read", supportsRestrictedAccess: false },
+  peran: { code: "pengguna.read", supportsRestrictedAccess: false },
+  "audit-log": { code: "laporan_aktivitas.read", supportsRestrictedAccess: false },
+  wilayah: { code: "wilayah.read", supportsRestrictedAccess: false },
+  "cadangan-data": { code: "pengaturan.read", supportsRestrictedAccess: false }
+};
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
@@ -414,11 +435,11 @@ function updateUserDisplay() {
 }
 
 function renderNavigation() {
-  const moduleLinks = modules.map((module) => `
+  const moduleLinks = getAccessibleModules().map((module) => `
     <button class="nav-link${activePage === module.id ? " active" : ""}" type="button" data-page="${module.id}"${activePage === module.id ? ' aria-current="page"' : ""}>
       <span class="nav-icon" aria-hidden="true">${module.short}</span>
       <span class="nav-label">${module.title}</span>
-      <span class="nav-count">${module.features.length}</span>
+      <span class="nav-count">${getAccessibleFeatures(module).length}</span>
     </button>
   `).join("");
 
@@ -434,8 +455,8 @@ function renderNavigation() {
 
 function renderModuleCards(query = "") {
   const normalizedQuery = query.trim().toLocaleLowerCase("id-ID");
-  const visibleModules = modules.filter((module) =>
-    `${module.title} ${module.description} ${module.features.map((feature) => feature.title).join(" ")}`
+  const visibleModules = getAccessibleModules().filter((module) =>
+    `${module.title} ${module.description} ${getAccessibleFeatures(module).map(({ feature }) => feature.title).join(" ")}`
       .toLocaleLowerCase("id-ID")
       .includes(normalizedQuery)
   );
@@ -452,24 +473,29 @@ function renderModuleCards(query = "") {
       </span>
       <h3>${module.title}</h3>
       <p>${module.description}</p>
-      <span class="module-card-bottom"><span>${module.features.length} fitur</span><span>Buka modul</span></span>
+      <span class="module-card-bottom"><span>${getAccessibleFeatures(module).length} fitur</span><span>Buka modul</span></span>
     </button>
   `).join("");
 }
 
 function renderHome() {
   const query = globalSearch.value;
-  const filteredModules = modules.filter((module) =>
-    `${module.title} ${module.description} ${module.features.map((feature) => feature.title).join(" ")}`
+  const visibleModules = getAccessibleModules();
+  const filteredModules = visibleModules.filter((module) =>
+    `${module.title} ${module.description} ${getAccessibleFeatures(module).map(({ feature }) => feature.title).join(" ")}`
       .toLocaleLowerCase("id-ID")
       .includes(query.trim().toLocaleLowerCase("id-ID"))
   );
   const moduleContent = renderModuleCards(query);
+  const featureCount = visibleModules.reduce((count, module) => count + getAccessibleFeatures(module).length, 0);
   const moduleDescription = query.trim()
-    ? `${filteredModules.length} dari ${modules.length} modul ditemukan.`
+    ? `${filteredModules.length} dari ${visibleModules.length} modul ditemukan.`
     : `Pilih menu untuk mulai mengelola lingkungan ${escapeHtml(currentUser.region || "Anda")}.`;
-  const periodName = dashboardData.currentPeriodName || "Periode berjalan";
+  const periodName = dashboardData?.currentPeriodName || "Periode berjalan";
   const cashNote = isConnectedToApi ? "Saldo berdasarkan transaksi kas" : "Akumulasi transaksi kas demo";
+  const canViewAnnouncements = !isConnectedToApi || userCanUsePermission(currentUser, "pengumuman.read", true);
+  const canViewActivities = !isConnectedToApi || userCanUsePermission(currentUser, "laporan_aktivitas.read");
+  const lowerPanelCount = Number(canViewAnnouncements) + Number(canViewActivities);
 
   pageContent.innerHTML = `
     <section class="page-heading">
@@ -481,6 +507,7 @@ function renderHome() {
       <span class="heading-tag"><span class="demo-dot" aria-hidden="true"></span>${escapeHtml(dashboardData.organizationName)} · ${escapeHtml(dashboardData.region)}</span>
     </section>
 
+    ${dashboardData?.summaryAvailable === false ? "" : `
     <section class="stats-grid" aria-label="Ringkasan data lingkungan">
       <article class="stat-card">
         <div class="stat-card-top"><span class="stat-label">Warga terdaftar</span><span class="stat-icon" aria-hidden="true">W</span></div>
@@ -499,25 +526,30 @@ function renderHome() {
         <strong>${formatRupiah(dashboardData.cashBalance)}</strong><small>${cashNote}</small>
       </article>
     </section>
+    `}
 
     <section aria-labelledby="modules-title">
       <div class="section-heading">
-        <div><h2 id="modules-title">Jelajahi modul</h2><p>Semua kebutuhan pengelolaan lingkungan dalam satu tempat.</p></div>
-        <span class="heading-tag">${modules.length} modul · 26 fitur</span>
+        <div><h2 id="modules-title">Jelajahi modul</h2><p>${isConnectedToApi ? "Modul yang tersedia sesuai izin peran Anda." : "Semua kebutuhan pengelolaan lingkungan dalam satu tempat."}</p></div>
+        <span class="heading-tag">${visibleModules.length} modul · ${featureCount} fitur</span>
       </div>
       <div class="module-grid">${moduleContent}</div>
     </section>
 
-    ${query.trim() ? "" : `
-      <section class="home-lower-grid" aria-label="Informasi terbaru">
+    ${query.trim() || lowerPanelCount === 0 ? "" : `
+      <section class="home-lower-grid${lowerPanelCount === 1 ? " single-panel" : ""}" aria-label="Informasi terbaru">
+        ${canViewAnnouncements ? `
         <article class="panel">
           <div class="panel-heading"><div><h2>Informasi lingkungan</h2><p>Pengumuman terbaru dari pengurus</p></div><span class="heading-tag">${announcements.length} aktif</span></div>
           <div class="announcement-list">${renderAnnouncements()}</div>
         </article>
+        ` : ""}
+        ${canViewActivities ? `
         <article class="panel">
           <div class="panel-heading"><div><h2>Aktivitas terbaru</h2><p>Ringkasan dari log aktivitas</p></div></div>
           <div class="activity-list">${renderActivities()}</div>
         </article>
+        ` : ""}
       </section>
     `}
   `;
@@ -525,7 +557,7 @@ function renderHome() {
 
 function renderFeatureCards(module, query = "") {
   const normalizedQuery = query.trim().toLocaleLowerCase("id-ID");
-  const visibleFeatures = module.features.filter((feature) =>
+  const visibleFeatures = getAccessibleFeatures(module).filter(({ feature }) =>
     `${feature.title} ${feature.description} ${feature.tables.join(" ")}`
       .toLocaleLowerCase("id-ID")
       .includes(normalizedQuery)
@@ -536,10 +568,10 @@ function renderFeatureCards(module, query = "") {
   }
 
   return visibleFeatures.map((feature, index) => `
-    <button class="feature-card" type="button" data-feature-module="${module.id}" data-feature-index="${module.features.indexOf(feature)}" aria-label="Buka fitur ${feature.title}">
+    <button class="feature-card" type="button" data-feature-module="${module.id}" data-feature-index="${feature.index}" aria-label="Buka fitur ${feature.feature.title}">
       <span class="feature-icon" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
-      <h3>${feature.title}</h3>
-      <p>${feature.description}</p>
+      <h3>${feature.feature.title}</h3>
+      <p>${feature.feature.description}</p>
       <span class="feature-card-footer"><span class="button button-secondary">Buka fitur</span><span class="feature-arrow" aria-hidden="true">→</span></span>
     </button>
   `).join("");
@@ -588,19 +620,20 @@ function renderReportPreview() {
 
 function renderModule(module) {
   const query = globalSearch.value;
-  const matchingFeatures = module.features.filter((feature) =>
+  const accessibleFeatures = getAccessibleFeatures(module);
+  const matchingFeatures = accessibleFeatures.filter(({ feature }) =>
     `${feature.title} ${feature.description} ${feature.tables.join(" ")}`
       .toLocaleLowerCase("id-ID")
       .includes(query.trim().toLocaleLowerCase("id-ID"))
   );
   const resultDescription = query.trim()
-    ? `${matchingFeatures.length} dari ${module.features.length} fitur cocok dengan pencarian.`
+    ? `${matchingFeatures.length} dari ${accessibleFeatures.length} fitur cocok dengan pencarian.`
     : module.description;
 
   pageContent.innerHTML = `
     <section class="page-heading">
       <div><p class="eyebrow">${escapeHtml(currentUser.role)} · ${escapeHtml(currentUser.region)}</p><h1>${module.title}</h1><p>${resultDescription}</p></div>
-      <span class="heading-tag"><span class="demo-dot" aria-hidden="true"></span>${module.features.length} fitur tersedia</span>
+      <span class="heading-tag"><span class="demo-dot" aria-hidden="true"></span>${accessibleFeatures.length} fitur tersedia</span>
     </section>
     ${module.id === "reports" && !query.trim() ? renderReportPreview() : ""}
     <section aria-label="Daftar fitur ${module.title}">
@@ -613,6 +646,74 @@ function renderModule(module) {
 function resourcePath(moduleId, featureIndex) {
   const endpoints = featureEndpoints[moduleId];
   return endpoints ? endpoints[featureIndex] : null;
+}
+
+function userHasPermission(user, permission) {
+  return user?.roleCode === "super_admin"
+    || (Array.isArray(user?.permissions) && user.permissions.includes(permission));
+}
+
+function userCanUsePermission(user, permission, supportsRestrictedAccess = false) {
+  if (!userHasPermission(user, permission)) {
+    return false;
+  }
+  if (user?.roleCode === "super_admin" || supportsRestrictedAccess) {
+    return true;
+  }
+  return !Array.isArray(user?.restrictedPermissions)
+    || !user.restrictedPermissions.includes(permission);
+}
+
+function featureRequiredPermissions(moduleId, featureIndex) {
+  const endpoint = resourcePath(moduleId, featureIndex);
+  if (!endpoint) {
+    return null;
+  }
+
+  const route = endpoint.split("?")[0];
+  if (route === "dashboard/summary") {
+    return [
+      { code: "warga.read", supportsRestrictedAccess: true },
+      { code: "laporan_keuangan.read", supportsRestrictedAccess: true }
+    ];
+  }
+  if (route === "announcements") {
+    return [{ code: "pengumuman.read", supportsRestrictedAccess: true }];
+  }
+  if (route === "notifications") {
+    return [];
+  }
+
+  const resourceMatch = route.match(/^resources\/([a-z-]+)$/);
+  if (!resourceMatch || !Object.prototype.hasOwnProperty.call(resourcePermissions, resourceMatch[1])) {
+    return null;
+  }
+  return [resourcePermissions[resourceMatch[1]]];
+}
+
+function canAccessFeature(moduleId, featureIndex) {
+  if (!isConnectedToApi) {
+    return true;
+  }
+
+  const requiredPermissions = featureRequiredPermissions(moduleId, featureIndex);
+  return requiredPermissions !== null
+    && requiredPermissions.every(({ code, supportsRestrictedAccess }) =>
+      userCanUsePermission(currentUser, code, supportsRestrictedAccess)
+    );
+}
+
+function getAccessibleFeatures(module) {
+  return module.features.reduce((features, feature, index) => {
+    if (canAccessFeature(module.id, index)) {
+      features.push({ feature, index });
+    }
+    return features;
+  }, []);
+}
+
+function getAccessibleModules() {
+  return modules.filter((module) => getAccessibleFeatures(module).length > 0);
 }
 
 function renderWorkspaceData(module, feature, endpoint) {
@@ -667,7 +768,6 @@ function renderWorkspaceData(module, feature, endpoint) {
 
 function renderFeatureWorkspace(module, feature, featureIndex) {
   const endpoint = resourcePath(module.id, featureIndex);
-  const endpointText = endpoint ? `/api/v1/${endpoint.split("?")[0]}` : "Belum tersedia";
   pageContent.innerHTML = `
     <section class="page-heading workspace-heading">
       <div>
@@ -692,16 +792,6 @@ function renderFeatureWorkspace(module, feature, featureIndex) {
           ${renderWorkspaceData(module, feature, endpoint)}
         </div>
       </article>
-      <aside class="panel workspace-aside">
-        <div class="panel-heading"><div><h2>Integrasi aplikasi</h2><p>Kontrak REST untuk web, mobile, dan desktop</p></div></div>
-        <div class="workspace-aside-content">
-          <span class="api-method">GET</span>
-          <code class="api-endpoint">${escapeHtml(endpointText)}</code>
-          <p>Gunakan respons JSON berformat <code>{ "data": { "items": [] } }</code>. Sesi web memakai cookie HttpOnly; aplikasi native dapat memakai token Bearer.</p>
-          <strong>Tabel terkait</strong>
-          <div class="table-tags">${feature.tables.map((table) => `<span class="table-tag">${escapeHtml(table)}</span>`).join("")}</div>
-        </div>
-      </aside>
     </section>
   `;
 
@@ -757,6 +847,16 @@ async function loadFeatureData(module, feature, featureIndex, endpoint) {
 }
 
 function renderPage() {
+  if (activeFeature && !canAccessFeature(activeFeature.moduleId, activeFeature.featureIndex)) {
+    activeFeature = null;
+  }
+  if (activePage !== "home") {
+    const activeModule = modules.find((item) => item.id === activePage);
+    if (!activeModule || getAccessibleFeatures(activeModule).length === 0) {
+      activePage = "home";
+    }
+  }
+
   renderNavigation();
   if (activeFeature) {
     const module = modules.find((item) => item.id === activeFeature.moduleId);
@@ -842,22 +942,28 @@ function openDemoDashboard() {
 
 async function openApiDashboard(user) {
   const [summary, announcementResponse, notificationResponse] = await Promise.all([
-    window.RtrwApi.request("/dashboard/summary"),
-    window.RtrwApi.request("/announcements?limit=5"),
+    ["warga.read", "laporan_keuangan.read"].every((permission) =>
+      userCanUsePermission(user, permission, true)
+    )
+      ? window.RtrwApi.request("/dashboard/summary")
+      : Promise.resolve(null),
+    userCanUsePermission(user, "pengumuman.read", true)
+      ? window.RtrwApi.request("/announcements?limit=5")
+      : Promise.resolve({ items: [] }),
     window.RtrwApi.request("/notifications?limit=5")
   ]);
-  const organizationName = summary.organization.name || user.organizationName || "Semua organisasi";
+  const organizationName = summary?.organization.name || user.organizationName || "Semua organisasi";
   const regionParts = [];
-  if (summary.organization.rtNumber) {
+  if (summary?.organization.rtNumber) {
     regionParts.push(`RT ${summary.organization.rtNumber}`);
   }
-  if (summary.organization.rwNumber) {
+  if (summary?.organization.rwNumber) {
     regionParts.push(`RW ${summary.organization.rwNumber}`);
   }
   const region = user.region || regionParts.join(" / ") || "Semua wilayah";
 
   currentUser = { ...user, organizationName, region };
-  dashboardData = {
+  dashboardData = summary ? {
     organizationName,
     region,
     residents: summary.stats.residents,
@@ -868,10 +974,15 @@ async function openApiDashboard(user) {
     collected: summary.period.collected,
     billed: summary.period.billed,
     paidFamilies: summary.period.paidFamilies,
-    pendingPayments: summary.period.pendingPayments
+    pendingPayments: summary.period.pendingPayments,
+    summaryAvailable: true
+  } : {
+    organizationName,
+    region,
+    summaryAvailable: false
   };
   announcements = announcementResponse.items;
-  activities = summary.activities || [];
+  activities = summary?.activities || [];
   notifications = notificationResponse.items;
   unreadNotificationCount = notificationResponse.unreadCount;
   isConnectedToApi = true;
@@ -954,7 +1065,11 @@ document.addEventListener("click", (event) => {
 
   const pageButton = target.closest("[data-page]");
   if (pageButton) {
-    activePage = pageButton.dataset.page;
+    const page = pageButton.dataset.page;
+    if (page !== "home" && !getAccessibleModules().some((module) => module.id === page)) {
+      return;
+    }
+    activePage = page;
     activeFeature = null;
     featureRequestId += 1;
     globalSearch.value = "";
@@ -965,9 +1080,14 @@ document.addEventListener("click", (event) => {
 
   const featureButton = target.closest("[data-feature-module]");
   if (featureButton) {
+    const moduleId = featureButton.dataset.featureModule;
+    const featureIndex = Number(featureButton.dataset.featureIndex);
+    if (!canAccessFeature(moduleId, featureIndex)) {
+      return;
+    }
     activeFeature = {
-      moduleId: featureButton.dataset.featureModule,
-      featureIndex: Number(featureButton.dataset.featureIndex)
+      moduleId,
+      featureIndex
     };
     featureRows = [];
     featureLoading = false;

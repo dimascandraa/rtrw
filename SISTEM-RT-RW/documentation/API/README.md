@@ -35,13 +35,15 @@ Authorization: Bearer <accessToken>
 
 `client` untuk web boleh dihilangkan atau bernilai `web`; token tidak dikembalikan ke JavaScript web. Logout dengan `POST /api/v1/auth/logout` mencabut token atau cookie yang sedang dipakai. Untuk web lintas origin, konfigurasi `APP_CORS_ALLOWED_ORIGINS` sebagai allowlist origin di `backend/.env`.
 
+Respons login dan `GET /auth/me` menyertakan daftar `user.permissions` dan `user.restrictedPermissions`. Daftar izin dipakai aplikasi untuk menyembunyikan menu yang tidak tersedia bagi peran pengguna; izin terbatas menandai akses yang hanya berlaku untuk data milik sendiri atau wilayah yang ditugaskan. Backend tetap memeriksa izin pada setiap endpoint.
+
 ## Endpoint
 
 | Metode | Path | Resource / penggunaan |
 |---|---|---|
 | `GET` | `/health` | Status database |
 | `POST` | `/auth/login` | Membuat sesi |
-| `GET` | `/auth/me` | Pengguna dan wilayah sesi |
+| `GET` | `/auth/me` | Pengguna, wilayah, dan izin sesi |
 | `POST` | `/auth/logout` | Mencabut sesi aktif |
 | `GET` | `/dashboard/summary` | Ringkasan beranda dan aktivitas |
 | `GET` | `/announcements` | Pengumuman sesuai wilayah |

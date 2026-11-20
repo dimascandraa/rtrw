@@ -1007,6 +1007,10 @@ input:focus-visible {
   margin-top: 27px;
 }
 
+.home-lower-grid.single-panel {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .panel {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -1359,23 +1363,6 @@ input:focus-visible {
   display: none;
 }
 
-.table-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 9px;
-}
-
-.table-tag {
-  padding: 5px 8px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: var(--ink-700);
-  background: var(--canvas);
-  font-family: Consolas, monospace;
-  font-size: 9px;
-}
-
 .workspace-heading {
   align-items: flex-start;
 }
@@ -1388,19 +1375,26 @@ input:focus-visible {
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(230px, 0.32fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 14px;
 }
 
-.workspace-panel,
-.workspace-aside {
+.workspace-panel {
   min-width: 0;
   overflow: hidden;
 }
 
 .workspace-panel .panel-heading {
   min-height: 72px;
+}
+
+.workspace-panel .panel-heading h2 {
+  font-size: 14px;
+}
+
+.workspace-panel .panel-heading p {
+  font-size: 11px;
 }
 
 .resource-toolbar {
@@ -1508,44 +1502,6 @@ input:focus-visible {
   letter-spacing: -0.035em;
 }
 
-.workspace-aside-content {
-  padding: 16px 18px 18px;
-}
-
-.api-method {
-  display: inline-block;
-  margin-right: 7px;
-  padding: 4px 6px;
-  border-radius: 5px;
-  color: var(--pine-800);
-  background: var(--pine-100);
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.api-endpoint {
-  color: var(--ink-900);
-  font-family: Consolas, monospace;
-  font-size: 10px;
-  overflow-wrap: anywhere;
-}
-
-.workspace-aside-content p {
-  margin: 14px 0 18px;
-  color: var(--ink-500);
-  font-size: 10px;
-  line-height: 1.7;
-}
-
-.workspace-aside-content p code {
-  color: var(--ink-700);
-  font-family: Consolas, monospace;
-}
-
-.workspace-aside-content > strong {
-  font-size: 10px;
-}
-
 .toast {
   position: fixed;
   z-index: 60;
@@ -1642,6 +1598,7 @@ body[data-theme="dark"] .chart-bar.expense {
   .sidebar-brand {
     font-size: 12px;
   }
+
 }
 
 @media (max-width: 760px) {
@@ -1796,8 +1753,7 @@ body[data-theme="dark"] .chart-bar.expense {
   }
 
   .home-lower-grid,
-  .dashboard-preview,
-  .workspace-grid {
+  .dashboard-preview {
     grid-template-columns: 1fr;
     gap: 10px;
   }

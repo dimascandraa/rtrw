@@ -155,7 +155,7 @@ function setAuthCookie(string $value, int $expiresAt, bool $secure): bool
     ]);
 }
 
-function publicUser(array $user): array
+function publicUser(PDO $connection, array $user): array
 {
     $regionParts = [];
     if (!empty($user['rt_number'])) {
@@ -165,12 +165,33 @@ function publicUser(array $user): array
         $regionParts[] = 'RW ' . $user['rw_number'];
     }
 
+    $permissionStatement = $connection->prepare(
+        'SELECT ia.kode, pia.terbatas
+        FROM peran_izin_akses pia
+        INNER JOIN izin_akses ia ON ia.id = pia.id_izin_akses
+        INNER JOIN penugasan_pengguna pp ON pp.id_peran = pia.id_peran
+        WHERE pp.id = :assignment_id
+          AND pp.aktif = 1
+        ORDER BY ia.kode'
+    );
+    $permissionStatement->execute(['assignment_id' => $user['assignment_id']]);
+    $permissionRows = $permissionStatement->fetchAll();
+    $permissions = array_column($permissionRows, 'kode');
+    $restrictedPermissions = array_column(
+        array_filter($permissionRows, static function (array $permission): bool {
+            return (int) $permission['terbatas'] === 1;
+        }),
+        'kode'
+    );
+
     return [
         'id' => (int) $user['id'],
         'name' => $user['name'],
         'email' => $user['email'],
         'role' => $user['role_name'],
         'roleCode' => $user['role_code'],
+        'permissions' => array_values(array_map('strval', $permissions)),
+        'restrictedPermissions' => array_values(array_map('strval', $restrictedPermissions)),
         'organizationId' => $user['organization_id'] === null ? null : (int) $user['organization_id'],
         'organizationName' => $user['organization_name'],
         'rwId' => $user['rw_id'] === null ? null : (int) $user['rw_id'],

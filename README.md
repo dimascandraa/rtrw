@@ -353,3 +353,12 @@ GET  /api/reports
 - Dokumentasikan perubahan fitur, API, dan database.
 
 **Tujuan utama:** menjaga agar seluruh anggota dapat bekerja secara bersamaan tanpa merusak pekerjaan anggota lainnya, serta memastikan aplikasi Web, Mobile, dan Desktop terintegrasi dalam satu platform.
+
+## 10. Fitur Web yang Tersedia
+
+- Warga dapat mendaftar; akun baru menunggu persetujuan admin, Ketua RW, atau Ketua RT dan hanya diaktifkan dengan peran Warga.
+- Warga dapat mengajukan surat dan melihat status pengajuannya. Pengurus dapat memproses surat sesuai wilayah.
+- Menu **Akun** menyediakan perubahan profil dan kata sandi. Perubahan peran tetap dikelola pengurus.
+- Fitur **Laporan PDF/Excel** mengunduh workbook Excel untuk kas, tagihan, dan pembayaran; pilihan PDF menggunakan dialog cetak browser (**Simpan sebagai PDF**).
+
+Detail endpoint dan validasi tersedia di `SISTEM-RT-RW\documentation\API\README.md`. Registrasi perlu memakai nomor telepon yang tercatat pada data warga agar pengurus dapat menghubungkan serta menyetujui akun.

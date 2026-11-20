@@ -115,7 +115,7 @@ WHERE kode IN ('pengguna.create', 'pengguna.read', 'pengguna.update', 'pengguna.
 
 INSERT INTO peran_izin_akses (id_peran, id_izin_akses, terbatas)
 SELECT (SELECT id FROM peran WHERE kode='admin_rw'), id, 0 FROM izin_akses
-WHERE kode IN ('pengguna.create', 'pengguna.read', 'pengguna.update', 'pengguna.delete', 'wilayah.create', 'wilayah.read', 'wilayah.update', 'wilayah.delete', 'keluarga.create', 'keluarga.read', 'keluarga.update', 'keluarga.delete', 'warga.create', 'warga.read', 'warga.update', 'warga.delete', 'mutasi_warga.create', 'mutasi_warga.read', 'mutasi_warga.update', 'mutasi_warga.delete', 'kategori_iuran.create', 'kategori_iuran.read', 'kategori_iuran.update', 'kategori_iuran.delete', 'tagihan.create', 'tagihan.read', 'tagihan.update', 'tagihan.delete', 'pembayaran.read', 'laporan_keuangan.read', 'pengajuan_surat.read', 'pengumuman.create', 'pengumuman.read', 'pengumuman.update', 'pengumuman.delete', 'kegiatan.create', 'kegiatan.read', 'kegiatan.update', 'kegiatan.delete', 'pengaduan.create', 'pengaduan.read', 'pengaduan.update', 'pengaduan.delete', 'laporan_aktivitas.read', 'pengaturan.create', 'pengaturan.read', 'pengaturan.update', 'pengaturan.delete');
+WHERE kode IN ('pengguna.create', 'pengguna.read', 'pengguna.update', 'pengguna.delete', 'wilayah.create', 'wilayah.read', 'wilayah.update', 'wilayah.delete', 'keluarga.create', 'keluarga.read', 'keluarga.update', 'keluarga.delete', 'warga.create', 'warga.read', 'warga.update', 'warga.delete', 'mutasi_warga.create', 'mutasi_warga.read', 'mutasi_warga.update', 'mutasi_warga.delete', 'kategori_iuran.create', 'kategori_iuran.read', 'kategori_iuran.update', 'kategori_iuran.delete', 'tagihan.create', 'tagihan.read', 'tagihan.update', 'tagihan.delete', 'pembayaran.read', 'laporan_keuangan.read', 'pengajuan_surat.read', 'pengajuan_surat.approve', 'pengumuman.create', 'pengumuman.read', 'pengumuman.update', 'pengumuman.delete', 'kegiatan.create', 'kegiatan.read', 'kegiatan.update', 'kegiatan.delete', 'pengaduan.create', 'pengaduan.read', 'pengaduan.update', 'pengaduan.delete', 'laporan_aktivitas.read', 'pengaturan.create', 'pengaturan.read', 'pengaturan.update', 'pengaturan.delete');
 
 INSERT INTO peran_izin_akses (id_peran, id_izin_akses, terbatas)
 SELECT (SELECT id FROM peran WHERE kode='ketua_rw'), id, 0 FROM izin_akses
@@ -151,7 +151,7 @@ WHERE kode IN ('kategori_iuran.read', 'pengajuan_surat.create', 'pengumuman.read
 
 INSERT INTO peran_izin_akses (id_peran, id_izin_akses, terbatas)
 SELECT (SELECT id FROM peran WHERE kode='warga'), id, 1 FROM izin_akses
-WHERE kode IN ('keluarga.read', 'warga.read', 'mutasi_warga.read', 'tagihan.read', 'pembayaran.read', 'laporan_keuangan.read', 'persetujuan_surat.read', 'pengaduan.read', 'pembayaran.create');
+WHERE kode IN ('keluarga.read', 'warga.read', 'mutasi_warga.read', 'tagihan.read', 'pembayaran.read', 'laporan_keuangan.read', 'pengajuan_surat.read', 'persetujuan_surat.read', 'pengaduan.read', 'pembayaran.create');
 
 -- =====================================================================
 -- BAGIAN 2. DATA DUMMY (hanya pengembangan & demo)
@@ -213,7 +213,7 @@ INSERT INTO pengguna (id, id_warga, nama, email, telepon, hash_kata_sandi, statu
   (5, 5,    'Hendra Gunawan', 'sekretaris@contoh.test', '081300000005', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
   (6, 6,    'Dewi Lestari',   'bendahara@contoh.test',  '081300000006', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
   (7, 9,    'Agus Pratama',  'agus@contoh.test',       '081300000007', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'aktif', NOW()),
-  (8, 11,   'Rudi Hartono',  'rudi@contoh.test',       '081300000008', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'menunggu_verifikasi', NULL);
+  (8, NULL, 'Rudi Hartono',  'rudi@contoh.test',       '081200000011', '$2y$10$9.lzmaZ2PPHUcZtZaXPgjOdgLZo7QMZ.jsb1o6tHMPsTTM2WjWtvK', 'menunggu_verifikasi', NULL);
 
 -- Penugasan: pengguna -> peran -> wilayah (Super Admin lintas organisasi => organisasi NULL)
 -- id_peran: 1 super_admin, 2 admin_rw, 3 ketua_rw, 4 ketua_rt, 5 sekretaris, 6 bendahara, 7 warga

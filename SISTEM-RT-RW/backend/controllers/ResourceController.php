@@ -95,22 +95,27 @@ function listResource(PDO $connection, array $user, string $resource): void
                 WHERE 1 = 1',
         ],
         'jenis-surat' => [
-            'permission' => 'pengajuan_surat.read',
+            'permission' => 'pengajuan_surat.create',
             'organization' => 'j.id_organisasi',
             'search' => ['j.nama', 'j.kode'],
             'query' => 'SELECT j.id, j.kode, j.nama, j.aktif
-                FROM jenis_surat j WHERE 1 = 1',
+                FROM jenis_surat j WHERE j.aktif = 1',
         ],
         'pengajuan-surat' => [
             'permission' => 'pengajuan_surat.read',
             'organization' => 's.id_organisasi',
             'limited' => 's.id_warga = :resident_id',
+            'rt' => 'k.id_rt',
+            'rw' => 'rw.id',
             'search' => ['s.keperluan', 's.status', 'j.nama', 'w.nama_lengkap'],
             'query' => 'SELECT s.id, j.nama AS jenis_surat, w.nama_lengkap AS nama_warga,
                     s.keperluan, s.status, s.diajukan_pada, s.nomor_surat
                 FROM pengajuan_surat s
                 INNER JOIN jenis_surat j ON j.id = s.id_jenis_surat
                 INNER JOIN warga w ON w.id = s.id_warga
+                INNER JOIN keluarga k ON k.id = w.id_keluarga
+                INNER JOIN rt ON rt.id = k.id_rt
+                INNER JOIN rw ON rw.id = rt.id_rw
                 WHERE 1 = 1',
         ],
         'survei' => [
@@ -259,7 +264,9 @@ function listResource(PDO $connection, array $user, string $resource): void
         $parameters['actor_id'] = (int) $user['id'];
     }
 
-    if ((int) $permission['terbatas'] === 1) {
+    $regionalLetterApprover = $resource === 'pengajuan-surat'
+        && in_array($user['role_code'], ['ketua_rt', 'ketua_rw'], true);
+    if ((int) $permission['terbatas'] === 1 && !$regionalLetterApprover) {
         if (!isset($configuration['limited']) || $user['id_warga'] === null) {
             jsonError(403, 'restricted_resource', 'Data fitur ini tidak tersedia untuk akses terbatas.');
         }

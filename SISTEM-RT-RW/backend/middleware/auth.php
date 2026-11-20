@@ -47,6 +47,7 @@ function authenticatedUser(PDO $connection): array
             u.id_warga,
             u.nama AS name,
             u.email,
+            u.telepon AS phone,
             u.status,
             pp.id AS assignment_id,
             pp.id_organisasi AS organization_id,
@@ -120,6 +121,9 @@ function requirePermission(PDO $connection, array $user, string $permissionCode)
     if ($user['role_code'] === 'super_admin') {
         return ['terbatas' => 0];
     }
+    if ($permissionCode === 'pengajuan_surat.approve' && $user['role_code'] === 'admin_rw') {
+        return ['terbatas' => 0];
+    }
 
     $statement = $connection->prepare(
         'SELECT pia.terbatas
@@ -138,6 +142,22 @@ function requirePermission(PDO $connection, array $user, string $permissionCode)
     $permission = $statement->fetch();
 
     if ($permission === false) {
+        if ($permissionCode === 'pengajuan_surat.read' && $user['role_code'] === 'warga') {
+            $ownRequests = $connection->prepare(
+                'SELECT pia.terbatas
+                FROM peran_izin_akses pia
+                INNER JOIN izin_akses ia ON ia.id = pia.id_izin_akses
+                INNER JOIN penugasan_pengguna pp ON pp.id_peran = pia.id_peran
+                WHERE pp.id = :assignment_id
+                  AND pp.aktif = 1
+                  AND ia.kode = \'pengajuan_surat.create\'
+                LIMIT 1'
+            );
+            $ownRequests->execute(['assignment_id' => $user['assignment_id']]);
+            if ($ownRequests->fetch() !== false) {
+                return ['terbatas' => 1];
+            }
+        }
         jsonError(403, 'forbidden', 'Anda tidak memiliki izin untuk mengakses data ini.');
     }
 
@@ -183,11 +203,20 @@ function publicUser(PDO $connection, array $user): array
         }),
         'kode'
     );
+    if ($user['role_code'] === 'warga' && in_array('pengajuan_surat.create', $permissions, true)
+        && !in_array('pengajuan_surat.read', $permissions, true)) {
+        $permissions[] = 'pengajuan_surat.read';
+        $restrictedPermissions[] = 'pengajuan_surat.read';
+    }
+    if ($user['role_code'] === 'admin_rw' && !in_array('pengajuan_surat.approve', $permissions, true)) {
+        $permissions[] = 'pengajuan_surat.approve';
+    }
 
     return [
         'id' => (int) $user['id'],
         'name' => $user['name'],
         'email' => $user['email'],
+        'phone' => $user['phone'] ?? null,
         'role' => $user['role_name'],
         'roleCode' => $user['role_code'],
         'permissions' => array_values(array_map('strval', $permissions)),

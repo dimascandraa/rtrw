@@ -43,8 +43,15 @@ Respons login dan `GET /auth/me` menyertakan daftar `user.permissions` dan `user
 |---|---|---|
 | `GET` | `/health` | Status database |
 | `POST` | `/auth/login` | Membuat sesi |
+| `POST` | `/auth/register` | Mendaftar akun dalam status menunggu verifikasi |
 | `GET` | `/auth/me` | Pengguna, wilayah, dan izin sesi |
 | `POST` | `/auth/logout` | Mencabut sesi aktif |
+| `PATCH` | `/auth/profile` | Mengubah profil sendiri |
+| `POST` | `/auth/password` | Mengganti kata sandi dengan verifikasi sandi saat ini |
+| `GET` | `/registrations/pending` | Pendaftaran yang dapat ditinjau pengurus wilayah |
+| `POST` | `/registrations/{id}/approve` | Menyetujui pendaftaran sebagai Warga |
+| `POST` | `/letters` | Mengirim pengajuan surat warga |
+| `POST` | `/letters/{id}/decision` | Menyetujui atau menolak surat sesuai wilayah |
 | `GET` | `/dashboard/summary` | Ringkasan beranda dan aktivitas |
 | `GET` | `/announcements` | Pengumuman sesuai wilayah |
 | `GET` | `/notifications` | Notifikasi pengguna dan jumlah belum dibaca |
@@ -54,7 +61,7 @@ Respons login dan `GET /auth/me` menyertakan daftar `user.permissions` dan `user
 | `GET` | `/resources/tagihan` | Tagihan dan status pembayaran |
 | `GET` | `/resources/pembayaran` | Pembayaran dan status verifikasi |
 | `GET` | `/resources/transaksi-kas` | Transaksi kas |
-| `GET` | `/resources/jenis-surat` | Jenis surat |
+| `GET` | `/resources/jenis-surat` | Jenis surat aktif untuk pengajuan |
 | `GET` | `/resources/pengajuan-surat` | Pengajuan dan status surat |
 | `GET` | `/resources/survei` | Survei dan jumlah jawaban |
 | `GET` | `/resources/kegiatan` | Agenda kegiatan warga |
@@ -75,4 +82,8 @@ GET /api/v1/resources/warga?search=Rina&limit=20&offset=0
 Authorization: Bearer <accessToken>
 ```
 
-Setiap resource memiliki izin, batas organisasi/wilayah, dan bentuk data khusus di backend. Akses terbatas yang tidak memiliki filter aman akan mendapat `403 restricted_resource`, bukan daftar global. Saat ini resource hanya menyediakan `GET`; mutasi data belum dibuka.
+Pendaftaran menerima `name`, `email` (opsional jika telepon tersedia), `phone`, dan `password` minimal 8 karakter. Akun disimpan dalam status menunggu verifikasi tanpa peran maupun sesi. Admin, Ketua RW, atau Ketua RT dapat melihat pendaftaran yang teleponnya cocok dengan data warga aktif di wilayahnya dan menyetujui akun sebagai Warga. Akun dengan nomor telepon yang belum tercatat pada data warga tidak dapat disetujui.
+
+Pengajuan surat menerima `jenisSuratId` dan `keperluan`; warga hanya dapat melihat pengajuan miliknya. Pengurus hanya dapat memutuskan pengajuan dalam organisasi/wilayah yang ditugaskan. Profil menerima `name`, `email`, dan `phone`; penggantian kata sandi menerima `currentPassword` dan `newPassword`.
+
+Setiap resource memiliki izin, batas organisasi/wilayah, dan bentuk data khusus di backend. Akses terbatas yang tidak memiliki filter aman akan mendapat `403 restricted_resource`, bukan daftar global. Ekspor laporan web mengambil data melalui resource API yang sama dan mempertahankan batas akses tersebut.

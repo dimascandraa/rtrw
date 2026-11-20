@@ -18,12 +18,23 @@
 
   async function request(path, options = {}) {
     const headers = { Accept: "application/json" };
+    const controller = new AbortController();
+    const timeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
+      ? options.timeoutMs
+      : 15000;
+    const timeoutSeconds = Math.ceil(timeoutMs / 1000);
+    let timedOut = false;
     const requestOptions = {
       method: options.method || "GET",
       credentials: "same-origin",
       cache: "no-store",
+      signal: controller.signal,
       headers
     };
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
 
     if (options.body !== undefined) {
       headers["Content-Type"] = "application/json";
@@ -31,16 +42,22 @@
     }
 
     let response;
+    let responseText;
     try {
       response = await fetch(`${apiBaseUrl}${path}`, requestOptions);
+      responseText = await response.text();
     } catch (error) {
+      if (timedOut) {
+        throw new Error(`API tidak merespons dalam ${timeoutSeconds} detik. Periksa backend dan koneksi database.`);
+      }
       if (error instanceof TypeError) {
         throw new Error("Tidak dapat terhubung ke API. Jalankan server PHP dan periksa konfigurasi database.");
       }
       throw error;
+    } finally {
+      window.clearTimeout(timeoutId);
     }
 
-    const responseText = await response.text();
     let payload;
     try {
       payload = JSON.parse(responseText);

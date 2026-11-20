@@ -301,7 +301,7 @@ const featureEndpoints = {
   communications: ["announcements?limit=100", "notifications?limit=100"],
   activities: ["resources/kegiatan"],
   safety: ["resources/pengaduan", "resources/kontak-darurat"],
-  access: ["resources/pengguna", "resources/pengguna", "resources/peran"],
+  access: ["resources/pengguna", "registrations/pending", "resources/peran"],
   "account-security": ["resources/audit-log", "resources/sesi"],
   platform: ["resources/wilayah", "resources/cadangan-data"]
 };
@@ -313,7 +313,7 @@ const resourcePermissions = {
   tagihan: { code: "tagihan.read", supportsRestrictedAccess: true },
   pembayaran: { code: "pembayaran.read", supportsRestrictedAccess: true },
   "transaksi-kas": { code: "laporan_keuangan.read", supportsRestrictedAccess: false },
-  "jenis-surat": { code: "pengajuan_surat.read", supportsRestrictedAccess: false },
+  "jenis-surat": { code: "pengajuan_surat.create", supportsRestrictedAccess: false },
   "pengajuan-surat": { code: "pengajuan_surat.read", supportsRestrictedAccess: true },
   survei: { code: "warga.read", supportsRestrictedAccess: true },
   pengumuman: { code: "pengumuman.read", supportsRestrictedAccess: true },
@@ -451,6 +451,7 @@ function renderNavigation() {
     <p class="nav-section-label">Modul</p>
     ${moduleLinks}
   `;
+  document.querySelector("#account-settings-button").classList.toggle("active", activePage === "account");
 }
 
 function renderModuleCards(query = "") {
@@ -643,6 +644,154 @@ function renderModule(module) {
   `;
 }
 
+function renderAccountSettings() {
+  pageContent.innerHTML = `
+    <section class="page-heading">
+      <div><p class="eyebrow">Pengaturan pribadi</p><h1>Akun saya</h1><p>Perbarui profil dan keamanan akun. Peran hanya dapat ditetapkan oleh pengurus.</p></div>
+      <span class="heading-tag">${escapeHtml(currentUser.role || "Pengguna")}</span>
+    </section>
+    <section class="account-settings-grid">
+      <article class="panel account-panel">
+        <div class="panel-heading"><div><h2>Profil</h2><p>Informasi kontak untuk akun RT/RW.</p></div></div>
+        <form id="profile-form" class="account-form">
+          <label for="profile-name-input">Nama lengkap</label>
+          <input id="profile-name-input" name="name" type="text" maxlength="150" value="${escapeHtml(currentUser.name || "")}" required>
+          <label for="profile-email-input">Email</label>
+          <input id="profile-email-input" name="email" type="email" maxlength="150" value="${escapeHtml(currentUser.email || "")}">
+          <label for="profile-phone-input">Nomor telepon</label>
+          <input id="profile-phone-input" name="phone" type="tel" maxlength="20" value="${escapeHtml(currentUser.phone || "")}">
+          <button class="button button-primary" type="submit">Simpan profil</button>
+        </form>
+      </article>
+      <article class="panel account-panel">
+        <div class="panel-heading"><div><h2>Ganti kata sandi</h2><p>Gunakan minimal 8 karakter.</p></div></div>
+        <form id="password-form" class="account-form">
+          <label for="current-password">Kata sandi saat ini</label>
+          <input id="current-password" name="currentPassword" type="password" autocomplete="current-password" required>
+          <label for="new-password">Kata sandi baru</label>
+          <input id="new-password" name="newPassword" type="password" autocomplete="new-password" minlength="8" required>
+          <label for="confirm-password">Ulangi kata sandi baru</label>
+          <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+          <button class="button button-primary" type="submit">Perbarui kata sandi</button>
+        </form>
+      </article>
+      <p class="account-role-note">Peran saat ini: <strong>${escapeHtml(currentUser.role || "Pengguna")}</strong>. Hubungi admin/RT/RW untuk perubahan peran; pendaftaran baru selalu dimulai sebagai Warga.</p>
+    </section>
+  `;
+}
+
+function xmlEscape(value) {
+  return String(value ?? "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+async function loadAllReportRows(resource) {
+  const rows = [];
+  let offset = 0;
+  while (offset < 1000000) {
+    const response = await window.RtrwApi.request(`/resources/${resource}?limit=100&offset=${offset}`);
+    const pageRows = Array.isArray(response.items) ? response.items : [];
+    rows.push(...pageRows);
+    if (pageRows.length < 100) {
+      return rows;
+    }
+    offset += pageRows.length;
+  }
+  throw new Error("Ekspor dihentikan karena jumlah data melewati batas aman.");
+}
+
+function reportWorkbookXml(sheets) {
+  const worksheetXml = sheets.map(({ name, rows }) => {
+    const columns = rows.length ? Object.keys(rows[0]) : ["Data"];
+    const tableRows = [
+      columns,
+      ...rows.map((row) => columns.map((column) => row[column] ?? ""))
+    ].map((values, rowIndex) => `
+      <Row>${values.map((value, columnIndex) => {
+        const column = columns[columnIndex];
+        const numeric = rowIndex > 0
+          && /(nominal|saldo|jumlah|total)/i.test(column)
+          && /^-?\d+(?:\.\d+)?$/.test(String(value));
+        return `<Cell><Data ss:Type="${numeric ? "Number" : "String"}">${xmlEscape(value)}</Data></Cell>`;
+      }).join("")}</Row>`).join("");
+    return `<Worksheet ss:Name="${name}"><Table>${tableRows}</Table></Worksheet>`;
+  }).join("");
+
+  return `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>
+    <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+      xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:x="urn:schemas-microsoft-com:office:excel"
+      xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">${worksheetXml}</Workbook>`;
+}
+
+function reportPrintHtml(sheets) {
+  const sections = sheets.map(({ name, rows }) => {
+    const columns = rows.length ? Object.keys(rows[0]) : ["Data"];
+    return `<section><h2>${escapeHtml(name)}</h2><table><thead><tr>${columns.map((column) => `<th>${escapeHtml(column.replace(/_/g, " "))}</th>`).join("")}</tr></thead><tbody>${rows.length
+      ? rows.map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(row[column] ?? "—")}</td>`).join("")}</tr>`).join("")
+      : `<tr><td colspan="${columns.length}">Tidak ada data</td></tr>`}</tbody></table></section>`;
+  }).join("");
+  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan RT/RW</title>
+    <style>body{font:12px Arial,sans-serif;color:#17231e;margin:24px}h1{font-size:20px}h2{font-size:15px;margin-top:24px}p{color:#53635b}table{width:100%;border-collapse:collapse;font-size:9px}th,td{border:1px solid #ccd5cf;padding:6px;text-align:left;overflow-wrap:anywhere}th{background:#edf2ef;text-transform:capitalize}@media print{body{margin:12mm}section{break-inside:avoid}h2{break-after:avoid}}</style>
+    </head><body><h1>Laporan Sistem Informasi RT/RW</h1><p>${escapeHtml(currentUser.organizationName)} · ${escapeHtml(currentUser.region)} · ${new Date().toLocaleString("id-ID")}</p>${sections}</body></html>`;
+}
+
+async function exportReports(format) {
+  const printWindow = format === "pdf" ? window.open("", "_blank") : null;
+  if (format === "pdf" && !printWindow) {
+    showToast("Izinkan pop-up browser untuk mencetak laporan.");
+    return;
+  }
+
+  try {
+    showToast("Mengambil seluruh data laporan dari API...");
+    const [cash, invoices, payments] = await Promise.all([
+      loadAllReportRows("transaksi-kas"),
+      loadAllReportRows("tagihan"),
+      loadAllReportRows("pembayaran")
+    ]);
+    const sheets = [
+      { name: "Kas", rows: cash },
+      { name: "Tagihan", rows: invoices },
+      { name: "Pembayaran", rows: payments }
+    ];
+
+    if (format === "excel") {
+      const workbook = reportWorkbookXml(sheets);
+      const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `laporan-rtrw-${new Date().toISOString().slice(0, 10)}.xls`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      showToast("File Excel berhasil diunduh.");
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(reportPrintHtml(sheets));
+    printWindow.document.close();
+    window.setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 500);
+    showToast("Laporan siap dicetak atau disimpan sebagai PDF.");
+  } catch (error) {
+    if (printWindow) {
+      printWindow.close();
+    }
+    showToast(error.message);
+  }
+}
+
 function resourcePath(moduleId, featureIndex) {
   const endpoints = featureEndpoints[moduleId];
   return endpoints ? endpoints[featureIndex] : null;
@@ -683,6 +832,9 @@ function featureRequiredPermissions(moduleId, featureIndex) {
   if (route === "notifications") {
     return [];
   }
+  if (route === "registrations/pending") {
+    return [];
+  }
 
   const resourceMatch = route.match(/^resources\/([a-z-]+)$/);
   if (!resourceMatch || !Object.prototype.hasOwnProperty.call(resourcePermissions, resourceMatch[1])) {
@@ -694,6 +846,10 @@ function featureRequiredPermissions(moduleId, featureIndex) {
 function canAccessFeature(moduleId, featureIndex) {
   if (!isConnectedToApi) {
     return true;
+  }
+
+  if (resourcePath(moduleId, featureIndex) === "registrations/pending") {
+    return ["super_admin", "admin_rw", "ketua_rw", "ketua_rt"].includes(currentUser.roleCode);
   }
 
   const requiredPermissions = featureRequiredPermissions(moduleId, featureIndex);
@@ -752,13 +908,20 @@ function renderWorkspaceData(module, feature, endpoint) {
   }
 
   const columns = Object.keys(filteredRows[0]).slice(0, 7);
+  const canApproveLetters = endpoint === "resources/pengajuan-surat"
+    && userHasPermission(currentUser, "pengajuan_surat.approve");
+  const canApproveRegistrations = endpoint === "registrations/pending";
   return `
     <div class="resource-table-wrap">
       <table class="resource-table">
-        <thead><tr>${columns.map((column) => `<th scope="col">${escapeHtml(column.replace(/_/g, " "))}</th>`).join("")}</tr></thead>
+        <thead><tr>${columns.map((column) => `<th scope="col">${escapeHtml(column.replace(/_/g, " "))}</th>`).join("")}${canApproveLetters || canApproveRegistrations ? "<th scope=\"col\">Tindakan</th>" : ""}</tr></thead>
         <tbody>
           ${filteredRows.map((row) => `
-            <tr>${columns.map((column) => `<td>${escapeHtml(row[column] === null || row[column] === "" ? "—" : row[column])}</td>`).join("")}</tr>
+            <tr>
+              ${columns.map((column) => `<td>${escapeHtml(row[column] === null || row[column] === "" ? "—" : row[column])}</td>`).join("")}
+              ${canApproveLetters ? `<td>${["diajukan", "diproses"].includes(row.status) ? `<button class="button button-secondary table-action" type="button" data-letter-decision="setuju" data-letter-id="${Number(row.id)}">Setujui</button> <button class="button button-outline table-action" type="button" data-letter-decision="tolak" data-letter-id="${Number(row.id)}">Tolak</button>` : "—"}</td>` : ""}
+              ${canApproveRegistrations ? `<td>${row.id_warga ? `<button class="button button-primary table-action" type="button" data-approve-registration="${Number(row.id)}">Setujui sebagai Warga</button>` : '<span class="muted">Data warga/telepon belum cocok</span>'}</td>` : ""}
+            </tr>
           `).join("")}
         </tbody>
       </table>
@@ -768,6 +931,8 @@ function renderWorkspaceData(module, feature, endpoint) {
 
 function renderFeatureWorkspace(module, feature, featureIndex) {
   const endpoint = resourcePath(module.id, featureIndex);
+  const canExportReports = module.id === "reports" && featureIndex === 1
+    && userCanUsePermission(currentUser, "laporan_keuangan.read");
   pageContent.innerHTML = `
     <section class="page-heading workspace-heading">
       <div>
@@ -782,8 +947,28 @@ function renderFeatureWorkspace(module, feature, featureIndex) {
       <article class="panel workspace-panel">
         <div class="panel-heading">
           <div><h2>Data fitur</h2><p>Data dibatasi sesuai izin dan wilayah akun Anda.</p></div>
-          <button class="button button-outline" type="button" data-resource-refresh${!isConnectedToApi ? " disabled" : ""}>Muat ulang</button>
+          <div class="workspace-actions">
+            ${canExportReports ? '<button class="button button-secondary" type="button" data-export-report="excel">Unduh Excel</button><button class="button button-secondary" type="button" data-export-report="pdf">Cetak / Simpan PDF</button>' : ""}
+            <button class="button button-outline" type="button" data-resource-refresh${!isConnectedToApi ? " disabled" : ""}>Muat ulang</button>
+          </div>
         </div>
+        ${module.id === "letters" && featureIndex === 0 && userHasPermission(currentUser, "pengajuan_surat.create") ? `
+          <div class="letter-request-area">
+            <h3>Ajukan surat</h3>
+            <form id="letter-request-form" class="inline-form">
+              <label for="letter-type">Jenis surat</label>
+              <select id="letter-type" name="jenisSuratId" required>
+                <option value="">Pilih jenis surat</option>
+                ${featureRows.map((row) => `<option value="${Number(row.id)}">${escapeHtml(row.nama)}</option>`).join("")}
+              </select>
+              <label for="letter-purpose">Keperluan</label>
+              <input id="letter-purpose" name="keperluan" type="text" maxlength="255" placeholder="Jelaskan keperluan surat" required>
+              <button class="button button-primary" type="submit"${!isConnectedToApi ? " disabled" : ""}>Kirim pengajuan</button>
+            </form>
+            ${!isConnectedToApi ? '<p class="registration-note">Pengajuan hanya dapat dikirim setelah masuk melalui API.</p>' : ""}
+          </div>
+        ` : ""}
+        ${canExportReports ? '<p class="export-note">Ekspor mengambil seluruh data yang dapat diakses (kas, tagihan, pembayaran) dari API. PDF dibuka melalui dialog cetak browser.</p>' : ""}
         <div class="resource-toolbar">
           <label class="resource-search-label" for="resource-search">Cari dalam data</label>
           <input id="resource-search" class="resource-search" type="search" placeholder="Ketik kata kunci..." autocomplete="off">
@@ -798,6 +983,16 @@ function renderFeatureWorkspace(module, feature, featureIndex) {
   if (isConnectedToApi && endpoint) {
     void loadFeatureData(module, feature, featureIndex, endpoint);
   }
+}
+
+function updateLetterTypeOptions() {
+  const selector = document.querySelector("#letter-type");
+  if (!selector) {
+    return;
+  }
+  selector.innerHTML = `<option value="">Pilih jenis surat</option>${featureRows
+    .map((row) => `<option value="${Number(row.id)}">${escapeHtml(row.nama)}</option>`)
+    .join("")}`;
 }
 
 async function loadFeatureData(module, feature, featureIndex, endpoint) {
@@ -829,6 +1024,9 @@ async function loadFeatureData(module, feature, featureIndex, endpoint) {
       featureRows = Array.isArray(response.items) ? response.items : [];
     }
     featureLoading = false;
+    if (endpoint === "resources/jenis-surat") {
+      updateLetterTypeOptions();
+    }
     const container = document.querySelector("#resource-data");
     if (container) {
       container.innerHTML = renderWorkspaceData(module, feature, endpoint);
@@ -850,7 +1048,7 @@ function renderPage() {
   if (activeFeature && !canAccessFeature(activeFeature.moduleId, activeFeature.featureIndex)) {
     activeFeature = null;
   }
-  if (activePage !== "home") {
+  if (activePage !== "home" && activePage !== "account") {
     const activeModule = modules.find((item) => item.id === activePage);
     if (!activeModule || getAccessibleFeatures(activeModule).length === 0) {
       activePage = "home";
@@ -858,6 +1056,10 @@ function renderPage() {
   }
 
   renderNavigation();
+  if (activePage === "account") {
+    renderAccountSettings();
+    return;
+  }
   if (activeFeature) {
     const module = modules.find((item) => item.id === activeFeature.moduleId);
     const feature = module?.features[activeFeature.featureIndex];
@@ -1057,7 +1259,7 @@ function initializeTheme() {
   setTheme(savedTheme === "dark" ? "dark" : "light");
 }
 
-document.addEventListener("click", (event) => {
+document.addEventListener("click", async (event) => {
   const target = event.target;
   if (!(target instanceof Element)) {
     return;
@@ -1066,7 +1268,10 @@ document.addEventListener("click", (event) => {
   const pageButton = target.closest("[data-page]");
   if (pageButton) {
     const page = pageButton.dataset.page;
-    if (page !== "home" && !getAccessibleModules().some((module) => module.id === page)) {
+    if (page !== "home" && page !== "account" && !getAccessibleModules().some((module) => module.id === page)) {
+      return;
+    }
+    if (page === "account" && !isConnectedToApi) {
       return;
     }
     activePage = page;
@@ -1107,6 +1312,86 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const exportButton = target.closest("[data-export-report]");
+  if (exportButton) {
+    void exportReports(exportButton.dataset.exportReport);
+    return;
+  }
+
+  const approvalButton = target.closest("[data-approve-registration]");
+  if (approvalButton) {
+    if (!window.confirm("Setujui pendaftaran ini sebagai akun Warga?")) {
+      return;
+    }
+    approvalButton.disabled = true;
+    try {
+      const result = await window.RtrwApi.request(`/registrations/${approvalButton.dataset.approveRegistration}/approve`, {
+        method: "POST",
+        body: {}
+      });
+      showToast(result.message || "Pendaftaran disetujui.");
+      const module = modules.find((item) => item.id === activeFeature?.moduleId);
+      const feature = module?.features[activeFeature?.featureIndex];
+      const endpoint = activeFeature ? resourcePath(activeFeature.moduleId, activeFeature.featureIndex) : null;
+      if (module && feature && endpoint) {
+        void loadFeatureData(module, feature, activeFeature.featureIndex, endpoint);
+      }
+    } catch (error) {
+      approvalButton.disabled = false;
+      showToast(error.message);
+    }
+    return;
+  }
+
+  const letterDecisionButton = target.closest("[data-letter-decision]");
+  if (letterDecisionButton) {
+    const decision = letterDecisionButton.dataset.letterDecision;
+    const label = decision === "setuju" ? "menyetujui" : "menolak";
+    if (!window.confirm(`Apakah Anda yakin ${label} pengajuan surat ini?`)) {
+      return;
+    }
+    letterDecisionButton.disabled = true;
+    try {
+      const result = await window.RtrwApi.request(`/letters/${letterDecisionButton.dataset.letterId}/decision`, {
+        method: "POST",
+        body: { keputusan: decision }
+      });
+      showToast(result.message || "Keputusan surat berhasil disimpan.");
+      const module = modules.find((item) => item.id === activeFeature?.moduleId);
+      const feature = module?.features[activeFeature?.featureIndex];
+      const endpoint = activeFeature ? resourcePath(activeFeature.moduleId, activeFeature.featureIndex) : null;
+      if (module && feature && endpoint) {
+        void loadFeatureData(module, feature, activeFeature.featureIndex, endpoint);
+      }
+    } catch (error) {
+      letterDecisionButton.disabled = false;
+      showToast(error.message);
+    }
+    return;
+  }
+
+  if (target.closest("#show-register")) {
+    document.querySelector("#login-form").hidden = true;
+    document.querySelector("#login-footnote").hidden = true;
+    document.querySelector(".demo-callout").hidden = true;
+    document.querySelector("#register-form").hidden = false;
+    document.querySelector("#login-eyebrow").textContent = "Akses warga";
+    document.querySelector("#login-title").textContent = "Buat akun";
+    document.querySelector("#login-intro").textContent = "Isi data akun menggunakan nomor telepon yang sudah terdaftar sebagai warga.";
+    return;
+  }
+
+  if (target.closest("#show-login")) {
+    document.querySelector("#register-form").hidden = true;
+    document.querySelector("#login-form").hidden = false;
+    document.querySelector("#login-footnote").hidden = false;
+    document.querySelector(".demo-callout").hidden = false;
+    document.querySelector("#login-eyebrow").textContent = "Selamat datang kembali";
+    document.querySelector("#login-title").textContent = "Masuk";
+    document.querySelector("#login-intro").textContent = "Gunakan email atau nomor telepon yang terdaftar.";
+    return;
+  }
+
   if (target.closest("[data-theme-toggle]")) {
     setTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
     return;
@@ -1132,7 +1417,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (target.closest("#forgot-password")) {
-    showToast("Reset kata sandi belum tersedia. Silakan hubungi pengurus RT/RW.");
+    showToast("Gunakan menu Akun setelah masuk untuk mengganti kata sandi.");
     return;
   }
 
@@ -1171,6 +1456,33 @@ document.querySelector("#login-form").addEventListener("submit", async (event) =
   }
 });
 
+document.querySelector("#register-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submitButton = form.querySelector("button[type=submit]");
+  submitButton.disabled = true;
+  submitButton.textContent = "Mengirim...";
+  try {
+    const result = await window.RtrwApi.request("/auth/register", {
+      method: "POST",
+      body: {
+        name: form.elements.name.value.trim(),
+        email: form.elements.email.value.trim(),
+        phone: form.elements.phone.value.trim(),
+        password: form.elements.password.value
+      }
+    });
+    form.reset();
+    document.querySelector("#show-login").click();
+    showToast(result.message || "Pendaftaran terkirim dan menunggu persetujuan.");
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Daftar akun";
+  }
+});
+
 document.querySelector("#demo-login").addEventListener("click", openDemoDashboard);
 
 document.querySelector("#toggle-password").addEventListener("click", (event) => {
@@ -1195,6 +1507,89 @@ pageContent.addEventListener("input", (event) => {
     const endpoint = activeFeature ? resourcePath(activeFeature.moduleId, activeFeature.featureIndex) : null;
     if (container && module && feature && endpoint) {
       container.innerHTML = renderWorkspaceData(module, feature, endpoint);
+    }
+  }
+});
+
+pageContent.addEventListener("submit", async (event) => {
+  const form = event.target;
+  if (!(form instanceof HTMLFormElement)) {
+    return;
+  }
+  event.preventDefault();
+
+  if (form.id === "letter-request-form") {
+    const submitButton = form.querySelector("button[type=submit]");
+    submitButton.disabled = true;
+    try {
+      const result = await window.RtrwApi.request("/letters", {
+        method: "POST",
+        body: {
+          jenisSuratId: Number(form.elements.jenisSuratId.value),
+          keperluan: form.elements.keperluan.value.trim()
+        }
+      });
+      showToast(result.message || "Pengajuan surat berhasil dikirim.");
+      form.reset();
+      const module = modules.find((item) => item.id === activeFeature?.moduleId);
+      const feature = module?.features[activeFeature?.featureIndex];
+      const endpoint = activeFeature ? resourcePath(activeFeature.moduleId, activeFeature.featureIndex) : null;
+      if (module && feature && endpoint) {
+        void loadFeatureData(module, feature, activeFeature.featureIndex, endpoint);
+      }
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      submitButton.disabled = false;
+    }
+    return;
+  }
+
+  if (form.id === "profile-form") {
+    const submitButton = form.querySelector("button[type=submit]");
+    submitButton.disabled = true;
+    try {
+      const result = await window.RtrwApi.request("/auth/profile", {
+        method: "PATCH",
+        body: {
+          name: form.elements.name.value.trim(),
+          email: form.elements.email.value.trim(),
+          phone: form.elements.phone.value.trim()
+        }
+      });
+      currentUser = { ...currentUser, ...result.user };
+      updateUserDisplay();
+      showToast("Profil berhasil diperbarui.");
+      renderAccountSettings();
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      submitButton.disabled = false;
+    }
+    return;
+  }
+
+  if (form.id === "password-form") {
+    const submitButton = form.querySelector("button[type=submit]");
+    if (form.elements.newPassword.value !== form.elements.confirmPassword.value) {
+      showToast("Konfirmasi kata sandi baru tidak sama.");
+      return;
+    }
+    submitButton.disabled = true;
+    try {
+      const result = await window.RtrwApi.request("/auth/password", {
+        method: "POST",
+        body: {
+          currentPassword: form.elements.currentPassword.value,
+          newPassword: form.elements.newPassword.value
+        }
+      });
+      form.reset();
+      showToast(result.message || "Kata sandi berhasil diperbarui.");
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      submitButton.disabled = false;
     }
   }
 });

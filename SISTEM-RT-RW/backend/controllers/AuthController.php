@@ -24,7 +24,7 @@ function login(PDO $connection, array $configuration): void
     }
 
     $statement = $connection->prepare(
-        'SELECT id, id_warga, nama AS name, email, hash_kata_sandi, status,
+        '        SELECT id, id_warga, nama AS name, email, telepon AS phone, hash_kata_sandi, status,
                 percobaan_login_gagal, terkunci_sampai
         FROM pengguna
         WHERE (email = :email OR telepon = :phone)

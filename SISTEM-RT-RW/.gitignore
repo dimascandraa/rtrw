@@ -1,0 +1,5 @@
+/backend/.env
+/backend/storage/*
+!/backend/storage/.gitkeep
+/desktop/out/
+*.log

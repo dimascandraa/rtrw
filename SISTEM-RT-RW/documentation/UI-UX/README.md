@@ -1,24 +1,26 @@
 # Dokumentasi UI/UX: Sistem Informasi RT/RW
 
-Folder ini berisi rancangan antarmuka (UI/UX) **Sistem Informasi RT/RW** milik kelompok kami. Rancangan masih berupa **draft desain** dan bukan frontend final. Isi tampilan mengikuti ERD (41 tabel) serta daftar modul yang sudah disepakati.
+Folder ini berisi rancangan antarmuka (UI/UX) **Sistem Informasi RT/RW** milik kelompok kami. Rancangan masih berupa **draft desain** dan bukan frontend final. Isi tampilan mengikuti ERD (41 tabel) serta daftar modul dan fitur yang sudah disepakati.
 
-**Status tahap ini:** desain gambar mencakup **login, beranda, dan 11 modul (menu)**, masing-masing dalam mode terang dan gelap (26 gambar). Web kini menyediakan ruang kerja untuk 26 fitur; tampilan operasional ini dikembangkan mengikuti sistem desain yang sama.
+**Status tahap ini:** desain **login, beranda, dan 11 modul (menu)**, masing-masing dalam mode terang dan gelap (26 gambar). Desain tampilan **fitur di dalam tiap modul** dikerjakan pada tahap berikutnya.
 
 ## Daftar Isi
 
 1. [Tujuan Perancangan](#1-tujuan-perancangan)
 2. [Tools yang Digunakan](#2-tools-yang-digunakan)
 3. [Struktur Folder](#3-struktur-folder)
-4. [Penjelasan Halaman Desain](#4-penjelasan-halaman-desain)
-5. [Catatan](#5-catatan)
+4. [Bagian A: Login, Beranda, dan Menu Modul](#4-bagian-a-login-beranda-dan-menu-modul)
+5. [Bagian B: Tampilan Fitur di Dalam Menu](#5-bagian-b-tampilan-fitur-di-dalam-menu)
+6. [Bagian C: Flowchart](#6-bagian-c-flowchart)
+7. [Catatan](#7-catatan)
 
 ---
 
 ## 1. Tujuan Perancangan
 
-1. Memberi gambaran awal alur aplikasi, mulai dari **login**, **beranda**, sampai **menu modul**.
+1. Memberi gambaran alur aplikasi secara utuh: **login**, **beranda**, **menu modul**, sampai **fitur** di dalam tiap modul.
 2. Menjadi acuan bersama anggota kelompok sebelum frontend dikerjakan, supaya tata letak, warna, dan istilah seragam.
-3. Memastikan **nama modul dan cakupannya sejalan dengan ERD** dan daftar fitur sistem.
+3. Memastikan setiap tampilan **sejalan dengan ERD**: kolom dan data yang tampil berasal dari tabel basis data yang sudah dirancang.
 4. Menguji ide dan menampung revisi lebih awal, karena mengubah gambar desain lebih murah daripada mengubah kode.
 5. Menyediakan **mode terang dan mode gelap** agar nyaman dipakai di berbagai kondisi.
 
@@ -28,7 +30,7 @@ Folder ini berisi rancangan antarmuka (UI/UX) **Sistem Informasi RT/RW** milik k
 
 | Kebutuhan | Tools |
 |---|---|
-| Perancangan awal dan prototipe | Claude (Anthropic), untuk menurunkan modul dan ERD menjadi layar desain |
+| Perancangan awal dan prototipe | Claude (Anthropic), untuk menurunkan modul, fitur, dan ERD menjadi layar desain |
 | Prototipe tampilan | HTML, CSS, dan JavaScript (tanpa framework) |
 | Font | Plus Jakarta Sans (Google Fonts) |
 | Pengambilan gambar | Screenshot halaman prototipe pada layar desktop |
@@ -41,6 +43,7 @@ Folder ini berisi rancangan antarmuka (UI/UX) **Sistem Informasi RT/RW** milik k
 
 - Warna utama hijau pinus dengan aksen kuning, supaya terasa seperti lingkungan perumahan.
 - Tata letak: sidebar menu di kiri dan area konten di kanan.
+- Status memakai warna: hijau (selesai), kuning (menunggu), merah (ditolak atau menunggak).
 - Tombol **Terang/Gelap** di pojok untuk berganti tema.
 
 ---
@@ -50,19 +53,31 @@ Folder ini berisi rancangan antarmuka (UI/UX) **Sistem Informasi RT/RW** milik k
 ```
 UI-UX/
 ├── README.md
-└── 01-desain-modul-menu/
-    ├── 01-login-gelap.png
-    ├── 02-login-terang.png
-    ├── 03-beranda-terang.png
-    ├── 04-beranda-gelap.png
-    ├── 05-dashboard-laporan-terang.png  ...  26-manajemen-platform-gelap.png
+├── 01-desain-modul-menu/          (26 gambar: login, beranda, 11 modul)
+│   ├── 01-login-gelap.png
+│   ├── 02-login-terang.png
+│   └── ... 26-manajemen-platform-gelap.png
+├── 02-desain-fitur/               (52 gambar: 26 fitur x 2 mode)
+│   ├── 01-dashboard-laporan/
+│   ├── 02-manajemen-data-warga/
+│   ├── 03-keuangan-rtrw/
+│   ├── 04-administrasi-surat/
+│   ├── 05-layanan-warga/
+│   ├── 06-informasi-komunikasi/
+│   ├── 07-sosial-kegiatan/
+│   ├── 08-keamanan-lingkungan/
+│   ├── 09-registrasi-akses/
+│   ├── 10-keamanan-akun/
+│   └── 11-manajemen-platform/
+└── 03-flowchart/                  (alur sistem dalam Mermaid)
+    └── flowchart.md
 ```
 
-Nama file diawali nomor urut (01 sampai 26) dan diakhiri `terang` atau `gelap`. Fitur per modul akan ditambahkan di folder `02-desain-fitur/` pada tahap berikutnya.
+Nama file diawali nomor urut dan diakhiri `terang` atau `gelap`.
 
 ---
 
-## 4. Penjelasan Halaman Desain
+## 4. Bagian A: Login, Beranda, dan Menu Modul
 
 ### 4.1 Halaman Login
 
@@ -70,7 +85,7 @@ Nama file diawali nomor urut (01 sampai 26) dan diakhiri `terang` atau `gelap`. 
 |---|---|
 | <img src="./01-desain-modul-menu/02-login-terang.png" width="480" alt="Mode terang"> | <img src="./01-desain-modul-menu/01-login-gelap.png" width="480" alt="Mode gelap"> |
 
-**Penjelasan:** Halaman pertama yang dilihat pengguna. Panel kiri berisi identitas aplikasi dan slogan, sedangkan panel kanan berisi form masuk dengan kolom **email atau telepon** dan **kata sandi**, pilihan *Ingat saya*, serta tautan *Lupa kata sandi*. Tombol di pojok kanan atas dipakai untuk berganti tema. Pendaftaran akun baru dirancang sebagai fitur pada modul *Registrasi & Akses*.
+**Penjelasan:** Halaman pertama yang dilihat pengguna. Panel kiri berisi identitas aplikasi dan slogan, sedangkan panel kanan berisi form masuk dengan kolom **email atau telepon** dan **kata sandi**, pilihan *Ingat saya*, serta tautan *Lupa kata sandi*. Tombol di pojok kanan atas dipakai untuk berganti tema. Pendaftaran akun baru dirancang sebagai fitur *Registrasi warga* (lihat Bagian B.9).
 **Tabel ERD terkait:** `pengguna`, `sesi_pengguna`
 
 ### 4.2 Beranda
@@ -84,7 +99,7 @@ Nama file diawali nomor urut (01 sampai 26) dan diakhiri `terang` atau `gelap`. 
 
 ### 4.3 Halaman Modul (Menu)
 
-Setiap modul punya halaman sendiri. Menu yang aktif ditandai pada sidebar, dan area utama menampilkan **kartu fitur** milik modul tersebut beserta deskripsinya. Tampilan isi tiap fitur dirancang pada tahap berikutnya.
+Setiap modul punya halaman sendiri. Menu yang aktif ditandai pada sidebar, dan area utama menampilkan **kartu fitur** milik modul tersebut. Tiap kartu menuju tampilan fitur pada Bagian B.
 
 #### 4.3.1 Dashboard & Laporan
 
@@ -187,19 +202,309 @@ Setiap modul punya halaman sendiri. Menu yang aktif ditandai pada sidebar, dan a
 
 ---
 
-## 5. Catatan
+## 5. Bagian B: Tampilan Fitur di Dalam Menu
+
+Total **26 fitur** dalam 11 modul. Kebanyakan fitur berbentuk **tabel data** dengan kolom pencarian dan tombol aksi. Kolom yang tampil diturunkan dari tabel ERD yang tercantum pada tiap fitur.
+
+### B.1 Dashboard & Laporan
+
+**Dashboard statistik interaktif**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/01-dashboard-laporan/01-dashboard-statistik-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/01-dashboard-laporan/01-dashboard-statistik-gelap.png" width="480" alt="Mode gelap"> |
+
+Kartu ringkasan (saldo kas, tagihan lunas, tunggakan, warga aktif) dan grafik batang pemasukan 6 bulan terakhir. Membantu pengurus memantau kondisi lingkungan sekilas.
+**Tabel ERD terkait:** `transaksi_kas`, `tagihan`, `pembayaran`, `warga`
+
+**Laporan PDF/Excel**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/01-dashboard-laporan/02-laporan-pdf-excel-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/01-dashboard-laporan/02-laporan-pdf-excel-gelap.png" width="480" alt="Mode gelap"> |
+
+Daftar laporan (kas, rekap iuran, daftar tunggakan, rekap pembayaran) beserta periode, format ekspor, dan status ketersediaannya.
+**Tabel ERD terkait:** `transaksi_kas`, `tagihan`, `pembayaran`
+
+### B.2 Manajemen Data Warga
+
+**Data warga & kepala keluarga**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/02-manajemen-data-warga/01-data-warga-kk-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/02-manajemen-data-warga/01-data-warga-kk-gelap.png" width="480" alt="Mode gelap"> |
+
+Tabel warga berisi NIK, nama, No. KK, RT, hubungan keluarga, dan status tinggal. Tombol *Tambah warga* dipakai untuk input data baru.
+**Tabel ERD terkait:** `warga`, `keluarga`, `rt`
+
+**Mutasi dan riwayat warga**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/02-manajemen-data-warga/02-mutasi-warga-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/02-manajemen-data-warga/02-mutasi-warga-gelap.png" width="480" alt="Mode gelap"> |
+
+Riwayat pindah masuk, pindah keluar, kelahiran, dan kematian, lengkap dengan tanggal, keterangan, dan pencatatnya.
+**Tabel ERD terkait:** `mutasi_warga`, `warga`
+
+### B.3 Keuangan RT/RW
+
+**Kategori dan aturan iuran**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/03-keuangan-rtrw/01-kategori-aturan-iuran-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/03-keuangan-rtrw/01-kategori-aturan-iuran-gelap.png" width="480" alt="Mode gelap"> |
+
+Daftar kategori iuran dengan jenis (wajib atau sukarela), nominal, periode, wilayah RT, dan aturan cicilan.
+**Tabel ERD terkait:** `kategori_iuran`, `aturan_iuran`
+
+**Tagihan otomatis**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/03-keuangan-rtrw/02-tagihan-otomatis-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/03-keuangan-rtrw/02-tagihan-otomatis-gelap.png" width="480" alt="Mode gelap"> |
+
+Tagihan per keluarga berdasarkan periode, dengan total, jatuh tempo, dan status (lunas, belum bayar, menunggak).
+**Tabel ERD terkait:** `tagihan`, `periode_tagihan`, `rincian_tagihan`
+
+**Pembayaran QRIS/transfer/tunai**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/03-keuangan-rtrw/03-pembayaran-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/03-keuangan-rtrw/03-pembayaran-gelap.png" width="480" alt="Mode gelap"> |
+
+Catatan pembayaran dengan metode QRIS, transfer, atau tunai. Pembayaran sebagian (cicilan) ditandai dengan status khusus.
+**Tabel ERD terkait:** `pembayaran`, `tagihan`
+
+**Verifikasi bukti pembayaran**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/03-keuangan-rtrw/04-verifikasi-bukti-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/03-keuangan-rtrw/04-verifikasi-bukti-gelap.png" width="480" alt="Mode gelap"> |
+
+Daftar bukti transfer yang diunggah warga. Bendahara menerima atau menolak tiap bukti.
+**Tabel ERD terkait:** `bukti_pembayaran`, `pembayaran`, `berkas`
+
+**Riwayat pembayaran & kuitansi**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/03-keuangan-rtrw/05-riwayat-kuitansi-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/03-keuangan-rtrw/05-riwayat-kuitansi-gelap.png" width="480" alt="Mode gelap"> |
+
+Riwayat pembayaran dengan nomor kuitansi dan berkas PDF yang bisa diunduh.
+**Tabel ERD terkait:** `pembayaran`, `kuitansi`
+
+**Kas masuk dan pengeluaran**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/03-keuangan-rtrw/06-kas-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/03-keuangan-rtrw/06-kas-gelap.png" width="480" alt="Mode gelap"> |
+
+Buku kas berisi tanggal, jenis (masuk atau keluar), kategori, keterangan, jumlah, dan bukti lampiran.
+**Tabel ERD terkait:** `transaksi_kas`, `kategori_pengeluaran`, `berkas`
+
+**Pengingat iuran/tunggakan**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/03-keuangan-rtrw/07-pengingat-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/03-keuangan-rtrw/07-pengingat-gelap.png" width="480" alt="Mode gelap"> |
+
+Jadwal dan status pengingat yang dikirim sebelum atau sesudah jatuh tempo lewat aplikasi atau email.
+**Tabel ERD terkait:** `notifikasi`, `log_notifikasi`, `tagihan`
+
+### B.4 Administrasi Surat
+
+**Pengajuan surat online**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/04-administrasi-surat/01-pengajuan-surat-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/04-administrasi-surat/01-pengajuan-surat-gelap.png" width="480" alt="Mode gelap"> |
+
+Daftar pengajuan surat (domisili, pengantar, keterangan usaha) beserta pemohon, keperluan, dan status proses.
+**Tabel ERD terkait:** `pengajuan_surat`, `jenis_surat`, `berkas`
+
+**Verifikasi dan persetujuan surat**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/04-administrasi-surat/02-persetujuan-surat-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/04-administrasi-surat/02-persetujuan-surat-gelap.png" width="480" alt="Mode gelap"> |
+
+Tampilan pengurus untuk memeriksa pengajuan, mencatat catatan, lalu menyetujui atau menolak.
+**Tabel ERD terkait:** `pengajuan_surat`, `persetujuan_surat`
+
+### B.5 Layanan Warga
+
+**Survei kepuasan warga**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/05-layanan-warga/01-survei-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/05-layanan-warga/01-survei-gelap.png" width="480" alt="Mode gelap"> |
+
+Daftar survei dengan periode, jumlah responden, skor rata-rata, dan status.
+**Tabel ERD terkait:** `survei`, `jawaban_survei`
+
+### B.6 Informasi & Komunikasi
+
+**Pengumuman RT/RW**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/06-informasi-komunikasi/01-pengumuman-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/06-informasi-komunikasi/01-pengumuman-gelap.png" width="480" alt="Mode gelap"> |
+
+Daftar pengumuman dengan target penerima (semua warga, RW, atau RT tertentu) dan status kirim.
+**Tabel ERD terkait:** `pengumuman`, `target_pengumuman`
+
+**Notifikasi aplikasi**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/06-informasi-komunikasi/02-notifikasi-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/06-informasi-komunikasi/02-notifikasi-gelap.png" width="480" alt="Mode gelap"> |
+
+Riwayat notifikasi tagihan, pembayaran, surat, pengumuman, dan kegiatan beserta status terkirim.
+**Tabel ERD terkait:** `notifikasi`, `log_notifikasi`
+
+### B.7 Sosial & Kegiatan
+
+**Jadwal kegiatan/kerja bakti**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/07-sosial-kegiatan/01-jadwal-kegiatan-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/07-sosial-kegiatan/01-jadwal-kegiatan-gelap.png" width="480" alt="Mode gelap"> |
+
+Agenda kerja bakti, rapat, dan posyandu dengan tanggal, tempat, RT, jumlah hadir, dan status.
+**Tabel ERD terkait:** `kegiatan`, `kehadiran_kegiatan`
+
+### B.8 Keamanan & Lingkungan
+
+**Laporan keluhan/kejadian**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/08-keamanan-lingkungan/01-laporan-keluhan-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/08-keamanan-lingkungan/01-laporan-keluhan-gelap.png" width="480" alt="Mode gelap"> |
+
+Laporan warga (kehilangan, gangguan keamanan, fasilitas rusak) lengkap dengan petugas penanggung jawab dan status tindak lanjut.
+**Tabel ERD terkait:** `pengaduan`, `tanggapan_pengaduan`, `berkas`
+
+**Kontak darurat/direktori layanan**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/08-keamanan-lingkungan/02-kontak-darurat-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/08-keamanan-lingkungan/02-kontak-darurat-gelap.png" width="480" alt="Mode gelap"> |
+
+Direktori pengurus, pos keamanan, ambulans, puskesmas, dan pemadam kebakaran.
+**Tabel ERD terkait:** `kontak_darurat`
+
+### B.9 Registrasi & Akses
+
+**Registrasi warga**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/09-registrasi-akses/01-registrasi-warga-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/09-registrasi-akses/01-registrasi-warga-gelap.png" width="480" alt="Mode gelap"> |
+
+Form pendaftaran dengan nama, nomor HP atau email, dan kata sandi. Setelah itu warga menerima kode OTP untuk verifikasi.
+**Tabel ERD terkait:** `pengguna`, `kode_verifikasi`
+
+**Verifikasi akun oleh Admin**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/09-registrasi-akses/02-verifikasi-akun-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/09-registrasi-akses/02-verifikasi-akun-gelap.png" width="480" alt="Mode gelap"> |
+
+Admin memeriksa pendaftar, menautkan akun ke data warga atau keluarga, lalu menentukan wilayahnya.
+**Tabel ERD terkait:** `pengguna`, `warga`, `keluarga`, `penugasan_pengguna`
+
+**Manajemen peran dan hak akses**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/09-registrasi-akses/03-peran-hak-akses-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/09-registrasi-akses/03-peran-hak-akses-gelap.png" width="480" alt="Mode gelap"> |
+
+Matriks peran (Super Admin, Admin Perumahan, Ketua RT/RW, Bendahara, Pengurus, Warga) terhadap modul. Tanda `*` berarti akses terbatas pada data milik sendiri atau wilayahnya.
+**Tabel ERD terkait:** `peran`, `izin_akses`, `peran_izin_akses`, `penugasan_pengguna`
+
+### B.10 Keamanan Akun
+
+**Riwayat aktivitas/audit log**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/10-keamanan-akun/01-audit-log-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/10-keamanan-akun/01-audit-log-gelap.png" width="480" alt="Mode gelap"> |
+
+Catatan perubahan data, persetujuan, dan verifikasi pembayaran, lengkap dengan waktu, pengguna, objek, dan alamat IP.
+**Tabel ERD terkait:** `log_audit`
+
+**Manajemen sesi/perangkat**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/10-keamanan-akun/02-sesi-perangkat-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/10-keamanan-akun/02-sesi-perangkat-gelap.png" width="480" alt="Mode gelap"> |
+
+Daftar perangkat yang sedang login, dengan tombol keluar dari perangkat lain.
+**Tabel ERD terkait:** `sesi_pengguna`
+
+### B.11 Manajemen Platform
+
+**Multi-RT/RW**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/11-manajemen-platform/01-multi-rtrw-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/11-manajemen-platform/01-multi-rtrw-gelap.png" width="480" alt="Mode gelap"> |
+
+Daftar organisasi atau perumahan dalam satu platform, dengan RW, jumlah RT, jumlah warga, dan status. Data tiap organisasi dipisahkan lewat `id_organisasi`.
+**Tabel ERD terkait:** `organisasi`, `rw`, `rt`
+
+**Ekspor dan backup data**
+
+| Mode terang | Mode gelap |
+|---|---|
+| <img src="./02-desain-fitur/11-manajemen-platform/02-backup-data-terang.png" width="480" alt="Mode terang"> | <img src="./02-desain-fitur/11-manajemen-platform/02-backup-data-gelap.png" width="480" alt="Mode gelap"> |
+
+Riwayat backup terjadwal dan ekspor data, dengan tombol *Backup sekarang*.
+**Tabel ERD terkait:** `cadangan_data`, `pengaturan`
+
+---
+## 6. Bagian C: Flowchart
+ 
+Alur kerja sistem disusun dalam bentuk flowchart (Mermaid, tampil langsung di GitHub) dan mengikuti desain di Bagian A dan B serta ERD. Isinya **1 alur utama, 11 alur modul, dan 26 alur fitur**.
+ 
+**Alur utama sistem**
+ 
+```mermaid
+flowchart TD
+  A(["Mulai"]) --> B["Buka halaman login"]
+  B --> C["Isi email/telepon dan kata sandi"]
+  C --> D{"Data valid?"}
+  D -->|Tidak| E["Tampilkan pesan gagal"]
+  E --> C
+  D -->|Ya| F["Sistem membuat sesi login"]
+  F --> G["Tampilkan Beranda sesuai peran dan wilayah"]
+  G --> H["Pilih modul di sidebar"]
+  H --> I["Tampilkan halaman modul"]
+  I --> J["Pilih fitur"]
+  J --> K["Gunakan fitur"]
+  K --> L{"Lanjut memakai sistem?"}
+  L -->|Ya| H
+  L -->|Tidak| M["Klik Keluar"]
+  M --> N["Sesi diakhiri"]
+  N --> O(["Selesai"])
+```
+ 
+**Flowchart lengkap:** alur tiap modul dan tiap fitur ada di [03-flowchart/flowchart.md](./03-flowchart/flowchart.md).
+ 
+---
+## 7. Catatan
 
 1. **Status:** semua gambar adalah **draft desain**, bukan tampilan final. Warna, tata letak, dan istilah masih bisa berubah mengikuti masukan kelompok atau dosen.
-2. **Cakupan gambar:** login, beranda, dan 11 halaman modul (menu). Halaman ruang kerja fitur dibuat pada web dan belum memiliki set screenshot desain terpisah.
+2. **Cakupan tahap ini:** login, beranda, dan 11 halaman modul (menu). Tampilan isi 26 fitur di dalam modul **belum dirancang** dan akan menyusul.
 3. **Mode tampilan:** setiap halaman tersedia dalam mode terang dan gelap.
 4. **Ukuran gambar:** diambil dalam tampilan desktop. Pada layar kecil, sidebar akan berubah menjadi menu geser.
 5. **Data contoh:** nama pengguna (Admin RT) dan wilayah (RT 03 / RW 05) hanya contoh.
 6. **Hak akses:** menu yang tampil akan menyesuaikan peran pengguna (Super Admin, Admin Perumahan, Ketua RT/RW, Bendahara, Pengurus, Warga). Draft ini memperlihatkan seluruh menu seperti yang dilihat admin.
 7. **Acuan:** ERD pada `erd.md` adalah sumber utama. Bila ERD atau daftar modul berubah, gambar di folder ini perlu diperbarui.
 
-### Rencana tahap berikutnya
+### Rencana pengembangan
 
 | Tahap | Isi | Status |
 |---|---|---|
 | 1 | Login, beranda, dan 11 modul (terang dan gelap) | Selesai |
-| 2 | Ruang kerja 26 fitur dan integrasi endpoint baca | Berjalan |
+| 2 | Tampilan isi tiap fitur (26 fitur) | Direncanakan |

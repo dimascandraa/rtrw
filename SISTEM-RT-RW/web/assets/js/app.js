@@ -279,10 +279,53 @@ const loginScreen = document.querySelector("#login-screen");
 const navigation = document.querySelector("#main-navigation");
 const pageContent = document.querySelector("#page-content");
 const globalSearch = document.querySelector("#global-search");
-const dialog = document.querySelector("#feature-dialog");
 const toast = document.querySelector("#toast");
 let activePage = "home";
+let activeFeature = null;
+let featureRows = [];
+let featureLoading = false;
+let featureError = "";
+let featureRequestId = 0;
 let toastTimeout;
+
+const featureEndpoints = {
+  reports: ["dashboard/summary", "dashboard/summary"],
+  residents: ["resources/warga", "resources/mutasi"],
+  finance: [
+    "resources/kategori-iuran", "resources/tagihan", "resources/pembayaran",
+    "resources/pembayaran", "resources/pembayaran", "resources/transaksi-kas",
+    "resources/tagihan"
+  ],
+  letters: ["resources/jenis-surat", "resources/pengajuan-surat"],
+  services: ["resources/survei"],
+  communications: ["announcements?limit=100", "notifications?limit=100"],
+  activities: ["resources/kegiatan"],
+  safety: ["resources/pengaduan", "resources/kontak-darurat"],
+  access: ["resources/pengguna", "resources/pengguna", "resources/peran"],
+  "account-security": ["resources/audit-log", "resources/sesi"],
+  platform: ["resources/wilayah", "resources/cadangan-data"]
+};
+
+const resourcePermissions = {
+  warga: { code: "warga.read", supportsRestrictedAccess: true },
+  mutasi: { code: "mutasi_warga.read", supportsRestrictedAccess: true },
+  "kategori-iuran": { code: "kategori_iuran.read", supportsRestrictedAccess: false },
+  tagihan: { code: "tagihan.read", supportsRestrictedAccess: true },
+  pembayaran: { code: "pembayaran.read", supportsRestrictedAccess: true },
+  "transaksi-kas": { code: "laporan_keuangan.read", supportsRestrictedAccess: false },
+  "jenis-surat": { code: "pengajuan_surat.read", supportsRestrictedAccess: false },
+  "pengajuan-surat": { code: "pengajuan_surat.read", supportsRestrictedAccess: true },
+  survei: { code: "warga.read", supportsRestrictedAccess: true },
+  pengumuman: { code: "pengumuman.read", supportsRestrictedAccess: true },
+  kegiatan: { code: "kegiatan.read", supportsRestrictedAccess: false },
+  pengaduan: { code: "pengaduan.read", supportsRestrictedAccess: true },
+  "kontak-darurat": { code: "warga.read", supportsRestrictedAccess: true },
+  pengguna: { code: "pengguna.read", supportsRestrictedAccess: false },
+  peran: { code: "pengguna.read", supportsRestrictedAccess: false },
+  "audit-log": { code: "laporan_aktivitas.read", supportsRestrictedAccess: false },
+  wilayah: { code: "wilayah.read", supportsRestrictedAccess: false },
+  "cadangan-data": { code: "pengaturan.read", supportsRestrictedAccess: false }
+};
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -392,11 +435,11 @@ function updateUserDisplay() {
 }
 
 function renderNavigation() {
-  const moduleLinks = modules.map((module) => `
+  const moduleLinks = getAccessibleModules().map((module) => `
     <button class="nav-link${activePage === module.id ? " active" : ""}" type="button" data-page="${module.id}"${activePage === module.id ? ' aria-current="page"' : ""}>
       <span class="nav-icon" aria-hidden="true">${module.short}</span>
       <span class="nav-label">${module.title}</span>
-      <span class="nav-count">${module.features.length}</span>
+      <span class="nav-count">${getAccessibleFeatures(module).length}</span>
     </button>
   `).join("");
 
@@ -412,8 +455,8 @@ function renderNavigation() {
 
 function renderModuleCards(query = "") {
   const normalizedQuery = query.trim().toLocaleLowerCase("id-ID");
-  const visibleModules = modules.filter((module) =>
-    `${module.title} ${module.description} ${module.features.map((feature) => feature.title).join(" ")}`
+  const visibleModules = getAccessibleModules().filter((module) =>
+    `${module.title} ${module.description} ${getAccessibleFeatures(module).map(({ feature }) => feature.title).join(" ")}`
       .toLocaleLowerCase("id-ID")
       .includes(normalizedQuery)
   );
@@ -430,24 +473,29 @@ function renderModuleCards(query = "") {
       </span>
       <h3>${module.title}</h3>
       <p>${module.description}</p>
-      <span class="module-card-bottom"><span>${module.features.length} fitur</span><span>Buka modul</span></span>
+      <span class="module-card-bottom"><span>${getAccessibleFeatures(module).length} fitur</span><span>Buka modul</span></span>
     </button>
   `).join("");
 }
 
 function renderHome() {
   const query = globalSearch.value;
-  const filteredModules = modules.filter((module) =>
-    `${module.title} ${module.description} ${module.features.map((feature) => feature.title).join(" ")}`
+  const visibleModules = getAccessibleModules();
+  const filteredModules = visibleModules.filter((module) =>
+    `${module.title} ${module.description} ${getAccessibleFeatures(module).map(({ feature }) => feature.title).join(" ")}`
       .toLocaleLowerCase("id-ID")
       .includes(query.trim().toLocaleLowerCase("id-ID"))
   );
   const moduleContent = renderModuleCards(query);
+  const featureCount = visibleModules.reduce((count, module) => count + getAccessibleFeatures(module).length, 0);
   const moduleDescription = query.trim()
-    ? `${filteredModules.length} dari ${modules.length} modul ditemukan.`
+    ? `${filteredModules.length} dari ${visibleModules.length} modul ditemukan.`
     : `Pilih menu untuk mulai mengelola lingkungan ${escapeHtml(currentUser.region || "Anda")}.`;
-  const periodName = dashboardData.currentPeriodName || "Periode berjalan";
+  const periodName = dashboardData?.currentPeriodName || "Periode berjalan";
   const cashNote = isConnectedToApi ? "Saldo berdasarkan transaksi kas" : "Akumulasi transaksi kas demo";
+  const canViewAnnouncements = !isConnectedToApi || userCanUsePermission(currentUser, "pengumuman.read", true);
+  const canViewActivities = !isConnectedToApi || userCanUsePermission(currentUser, "laporan_aktivitas.read");
+  const lowerPanelCount = Number(canViewAnnouncements) + Number(canViewActivities);
 
   pageContent.innerHTML = `
     <section class="page-heading">
@@ -459,6 +507,7 @@ function renderHome() {
       <span class="heading-tag"><span class="demo-dot" aria-hidden="true"></span>${escapeHtml(dashboardData.organizationName)} · ${escapeHtml(dashboardData.region)}</span>
     </section>
 
+    ${dashboardData?.summaryAvailable === false ? "" : `
     <section class="stats-grid" aria-label="Ringkasan data lingkungan">
       <article class="stat-card">
         <div class="stat-card-top"><span class="stat-label">Warga terdaftar</span><span class="stat-icon" aria-hidden="true">W</span></div>
@@ -477,25 +526,30 @@ function renderHome() {
         <strong>${formatRupiah(dashboardData.cashBalance)}</strong><small>${cashNote}</small>
       </article>
     </section>
+    `}
 
     <section aria-labelledby="modules-title">
       <div class="section-heading">
-        <div><h2 id="modules-title">Jelajahi modul</h2><p>Semua kebutuhan pengelolaan lingkungan dalam satu tempat.</p></div>
-        <span class="heading-tag">${modules.length} modul · 26 fitur</span>
+        <div><h2 id="modules-title">Jelajahi modul</h2><p>${isConnectedToApi ? "Modul yang tersedia sesuai izin peran Anda." : "Semua kebutuhan pengelolaan lingkungan dalam satu tempat."}</p></div>
+        <span class="heading-tag">${visibleModules.length} modul · ${featureCount} fitur</span>
       </div>
       <div class="module-grid">${moduleContent}</div>
     </section>
 
-    ${query.trim() ? "" : `
-      <section class="home-lower-grid" aria-label="Informasi terbaru">
+    ${query.trim() || lowerPanelCount === 0 ? "" : `
+      <section class="home-lower-grid${lowerPanelCount === 1 ? " single-panel" : ""}" aria-label="Informasi terbaru">
+        ${canViewAnnouncements ? `
         <article class="panel">
           <div class="panel-heading"><div><h2>Informasi lingkungan</h2><p>Pengumuman terbaru dari pengurus</p></div><span class="heading-tag">${announcements.length} aktif</span></div>
           <div class="announcement-list">${renderAnnouncements()}</div>
         </article>
+        ` : ""}
+        ${canViewActivities ? `
         <article class="panel">
           <div class="panel-heading"><div><h2>Aktivitas terbaru</h2><p>Ringkasan dari log aktivitas</p></div></div>
           <div class="activity-list">${renderActivities()}</div>
         </article>
+        ` : ""}
       </section>
     `}
   `;
@@ -503,7 +557,7 @@ function renderHome() {
 
 function renderFeatureCards(module, query = "") {
   const normalizedQuery = query.trim().toLocaleLowerCase("id-ID");
-  const visibleFeatures = module.features.filter((feature) =>
+  const visibleFeatures = getAccessibleFeatures(module).filter(({ feature }) =>
     `${feature.title} ${feature.description} ${feature.tables.join(" ")}`
       .toLocaleLowerCase("id-ID")
       .includes(normalizedQuery)
@@ -514,11 +568,11 @@ function renderFeatureCards(module, query = "") {
   }
 
   return visibleFeatures.map((feature, index) => `
-    <button class="feature-card" type="button" data-feature-module="${module.id}" data-feature-index="${module.features.indexOf(feature)}" aria-label="Lihat pratinjau ${feature.title}">
+    <button class="feature-card" type="button" data-feature-module="${module.id}" data-feature-index="${feature.index}" aria-label="Buka fitur ${feature.feature.title}">
       <span class="feature-icon" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
-      <h3>${feature.title}</h3>
-      <p>${feature.description}</p>
-      <span class="feature-card-footer"><span class="button button-secondary">Lihat tampilan</span><span class="feature-arrow" aria-hidden="true">→</span></span>
+      <h3>${feature.feature.title}</h3>
+      <p>${feature.feature.description}</p>
+      <span class="feature-card-footer"><span class="button button-secondary">Buka fitur</span><span class="feature-arrow" aria-hidden="true">→</span></span>
     </button>
   `).join("");
 }
@@ -566,30 +620,253 @@ function renderReportPreview() {
 
 function renderModule(module) {
   const query = globalSearch.value;
-  const matchingFeatures = module.features.filter((feature) =>
+  const accessibleFeatures = getAccessibleFeatures(module);
+  const matchingFeatures = accessibleFeatures.filter(({ feature }) =>
     `${feature.title} ${feature.description} ${feature.tables.join(" ")}`
       .toLocaleLowerCase("id-ID")
       .includes(query.trim().toLocaleLowerCase("id-ID"))
   );
   const resultDescription = query.trim()
-    ? `${matchingFeatures.length} dari ${module.features.length} fitur cocok dengan pencarian.`
+    ? `${matchingFeatures.length} dari ${accessibleFeatures.length} fitur cocok dengan pencarian.`
     : module.description;
 
   pageContent.innerHTML = `
     <section class="page-heading">
       <div><p class="eyebrow">${escapeHtml(currentUser.role)} · ${escapeHtml(currentUser.region)}</p><h1>${module.title}</h1><p>${resultDescription}</p></div>
-      <span class="heading-tag"><span class="demo-dot" aria-hidden="true"></span>${module.features.length} fitur tersedia</span>
+      <span class="heading-tag"><span class="demo-dot" aria-hidden="true"></span>${accessibleFeatures.length} fitur tersedia</span>
     </section>
     ${module.id === "reports" && !query.trim() ? renderReportPreview() : ""}
     <section aria-label="Daftar fitur ${module.title}">
-      <div class="section-heading"><div><h2>Fitur modul</h2><p>Pilih fitur untuk melihat pratinjau dan tabel terkait.</p></div></div>
+      <div class="section-heading"><div><h2>Fitur modul</h2><p>Pilih fitur untuk membuka ruang kerja dan data terkait.</p></div></div>
       <div class="feature-grid">${renderFeatureCards(module, query)}</div>
     </section>
   `;
 }
 
+function resourcePath(moduleId, featureIndex) {
+  const endpoints = featureEndpoints[moduleId];
+  return endpoints ? endpoints[featureIndex] : null;
+}
+
+function userHasPermission(user, permission) {
+  return user?.roleCode === "super_admin"
+    || (Array.isArray(user?.permissions) && user.permissions.includes(permission));
+}
+
+function userCanUsePermission(user, permission, supportsRestrictedAccess = false) {
+  if (!userHasPermission(user, permission)) {
+    return false;
+  }
+  if (user?.roleCode === "super_admin" || supportsRestrictedAccess) {
+    return true;
+  }
+  return !Array.isArray(user?.restrictedPermissions)
+    || !user.restrictedPermissions.includes(permission);
+}
+
+function featureRequiredPermissions(moduleId, featureIndex) {
+  const endpoint = resourcePath(moduleId, featureIndex);
+  if (!endpoint) {
+    return null;
+  }
+
+  const route = endpoint.split("?")[0];
+  if (route === "dashboard/summary") {
+    return [
+      { code: "warga.read", supportsRestrictedAccess: true },
+      { code: "laporan_keuangan.read", supportsRestrictedAccess: true }
+    ];
+  }
+  if (route === "announcements") {
+    return [{ code: "pengumuman.read", supportsRestrictedAccess: true }];
+  }
+  if (route === "notifications") {
+    return [];
+  }
+
+  const resourceMatch = route.match(/^resources\/([a-z-]+)$/);
+  if (!resourceMatch || !Object.prototype.hasOwnProperty.call(resourcePermissions, resourceMatch[1])) {
+    return null;
+  }
+  return [resourcePermissions[resourceMatch[1]]];
+}
+
+function canAccessFeature(moduleId, featureIndex) {
+  if (!isConnectedToApi) {
+    return true;
+  }
+
+  const requiredPermissions = featureRequiredPermissions(moduleId, featureIndex);
+  return requiredPermissions !== null
+    && requiredPermissions.every(({ code, supportsRestrictedAccess }) =>
+      userCanUsePermission(currentUser, code, supportsRestrictedAccess)
+    );
+}
+
+function getAccessibleFeatures(module) {
+  return module.features.reduce((features, feature, index) => {
+    if (canAccessFeature(module.id, index)) {
+      features.push({ feature, index });
+    }
+    return features;
+  }, []);
+}
+
+function getAccessibleModules() {
+  return modules.filter((module) => getAccessibleFeatures(module).length > 0);
+}
+
+function renderWorkspaceData(module, feature, endpoint) {
+  if (featureLoading) {
+    return '<div class="empty-state" role="status">Memuat data dari API...</div>';
+  }
+  if (featureError) {
+    return `<div class="empty-state resource-error" role="alert">${escapeHtml(featureError)}</div>`;
+  }
+  if (!isConnectedToApi) {
+    return '<div class="empty-state">Masuk melalui API untuk memuat data lingkungan. Mode demo tidak mengubah atau menyimpan data.</div>';
+  }
+  if (!featureRows.length) {
+    return '<div class="empty-state">Belum ada data untuk fitur ini.</div>';
+  }
+
+  const query = (document.querySelector("#resource-search")?.value || "").trim().toLocaleLowerCase("id-ID");
+  const filteredRows = featureRows.filter((row) =>
+    Object.values(row).some((value) => String(value ?? "").toLocaleLowerCase("id-ID").includes(query))
+  );
+  if (!filteredRows.length) {
+    return '<div class="empty-state">Tidak ada data yang cocok dengan pencarian.</div>';
+  }
+
+  if (endpoint === "dashboard/summary") {
+    return `
+      <div class="resource-stat-grid">
+        ${filteredRows.map((row) => `
+          <article class="resource-stat">
+            <span>${escapeHtml(row.label)}</span>
+            <strong>${escapeHtml(row.value)}</strong>
+          </article>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  const columns = Object.keys(filteredRows[0]).slice(0, 7);
+  return `
+    <div class="resource-table-wrap">
+      <table class="resource-table">
+        <thead><tr>${columns.map((column) => `<th scope="col">${escapeHtml(column.replace(/_/g, " "))}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${filteredRows.map((row) => `
+            <tr>${columns.map((column) => `<td>${escapeHtml(row[column] === null || row[column] === "" ? "—" : row[column])}</td>`).join("")}</tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderFeatureWorkspace(module, feature, featureIndex) {
+  const endpoint = resourcePath(module.id, featureIndex);
+  pageContent.innerHTML = `
+    <section class="page-heading workspace-heading">
+      <div>
+        <button class="section-link workspace-back" type="button" data-page="${module.id}">← Kembali ke ${escapeHtml(module.title)}</button>
+        <p class="eyebrow">${escapeHtml(module.title)} · Ruang kerja fitur</p>
+        <h1>${escapeHtml(feature.title)}</h1>
+        <p>${escapeHtml(feature.description)}</p>
+      </div>
+      <span class="heading-tag">${isConnectedToApi ? "Terhubung ke API" : "Mode demo"}</span>
+    </section>
+    <section class="workspace-grid">
+      <article class="panel workspace-panel">
+        <div class="panel-heading">
+          <div><h2>Data fitur</h2><p>Data dibatasi sesuai izin dan wilayah akun Anda.</p></div>
+          <button class="button button-outline" type="button" data-resource-refresh${!isConnectedToApi ? " disabled" : ""}>Muat ulang</button>
+        </div>
+        <div class="resource-toolbar">
+          <label class="resource-search-label" for="resource-search">Cari dalam data</label>
+          <input id="resource-search" class="resource-search" type="search" placeholder="Ketik kata kunci..." autocomplete="off">
+        </div>
+        <div id="resource-data" class="resource-data" aria-live="polite">
+          ${renderWorkspaceData(module, feature, endpoint)}
+        </div>
+      </article>
+    </section>
+  `;
+
+  if (isConnectedToApi && endpoint) {
+    void loadFeatureData(module, feature, featureIndex, endpoint);
+  }
+}
+
+async function loadFeatureData(module, feature, featureIndex, endpoint) {
+  const requestId = ++featureRequestId;
+  featureLoading = true;
+  featureError = "";
+  const dataContainer = document.querySelector("#resource-data");
+  if (dataContainer) {
+    dataContainer.innerHTML = '<div class="empty-state" role="status">Memuat data dari API...</div>';
+  }
+
+  try {
+    const response = await window.RtrwApi.request(`/${endpoint}`);
+    if (requestId !== featureRequestId || !activeFeature || activeFeature.moduleId !== module.id || activeFeature.featureIndex !== featureIndex) {
+      return;
+    }
+
+    if (endpoint === "dashboard/summary") {
+      const { stats, period } = response;
+      featureRows = [
+        { label: "Warga terdaftar", value: stats.residents },
+        { label: "Kepala keluarga", value: stats.families },
+        { label: "Tagihan belum lunas", value: stats.unpaidInvoices },
+        { label: "Saldo kas", value: stats.cashBalance === null ? "Tidak tersedia" : formatRupiah(stats.cashBalance) },
+        { label: "Tagihan periode ini", value: formatRupiah(period.billed) },
+        { label: "Pembayaran terkumpul", value: formatRupiah(period.collected) }
+      ];
+    } else {
+      featureRows = Array.isArray(response.items) ? response.items : [];
+    }
+    featureLoading = false;
+    const container = document.querySelector("#resource-data");
+    if (container) {
+      container.innerHTML = renderWorkspaceData(module, feature, endpoint);
+    }
+  } catch (error) {
+    if (requestId !== featureRequestId) {
+      return;
+    }
+    featureLoading = false;
+    featureError = error.message;
+    const container = document.querySelector("#resource-data");
+    if (container) {
+      container.innerHTML = renderWorkspaceData(module, feature, endpoint);
+    }
+  }
+}
+
 function renderPage() {
+  if (activeFeature && !canAccessFeature(activeFeature.moduleId, activeFeature.featureIndex)) {
+    activeFeature = null;
+  }
+  if (activePage !== "home") {
+    const activeModule = modules.find((item) => item.id === activePage);
+    if (!activeModule || getAccessibleFeatures(activeModule).length === 0) {
+      activePage = "home";
+    }
+  }
+
   renderNavigation();
+  if (activeFeature) {
+    const module = modules.find((item) => item.id === activeFeature.moduleId);
+    const feature = module?.features[activeFeature.featureIndex];
+    if (module && feature) {
+      renderFeatureWorkspace(module, feature, activeFeature.featureIndex);
+      return;
+    }
+    activeFeature = null;
+  }
   if (activePage === "home") {
     renderHome();
     return;
@@ -608,26 +885,11 @@ function showToast(message) {
   toastTimeout = window.setTimeout(() => toast.classList.remove("visible"), 3200);
 }
 
-function openFeaturePreview(moduleId, featureIndex) {
-  const module = modules.find((item) => item.id === moduleId);
-  const feature = module?.features[featureIndex];
-  if (!module || !feature) {
-    return;
-  }
-
-  document.querySelector("#dialog-icon").textContent = module.short;
-  document.querySelector("#dialog-title").textContent = feature.title;
-  document.querySelector("#dialog-description").textContent = feature.description;
-  document.querySelector("#dialog-tables-list").innerHTML = feature.tables
-    .map((table) => `<span class="table-tag">${table}</span>`)
-    .join("");
-  dialog.showModal();
-}
-
 function showDashboard() {
   loginScreen.hidden = true;
   appShell.hidden = false;
   activePage = "home";
+  activeFeature = null;
   globalSearch.value = "";
   renderPage();
   pageContent.focus({ preventScroll: true });
@@ -680,22 +942,28 @@ function openDemoDashboard() {
 
 async function openApiDashboard(user) {
   const [summary, announcementResponse, notificationResponse] = await Promise.all([
-    window.RtrwApi.request("/dashboard/summary"),
-    window.RtrwApi.request("/announcements?limit=5"),
+    ["warga.read", "laporan_keuangan.read"].every((permission) =>
+      userCanUsePermission(user, permission, true)
+    )
+      ? window.RtrwApi.request("/dashboard/summary")
+      : Promise.resolve(null),
+    userCanUsePermission(user, "pengumuman.read", true)
+      ? window.RtrwApi.request("/announcements?limit=5")
+      : Promise.resolve({ items: [] }),
     window.RtrwApi.request("/notifications?limit=5")
   ]);
-  const organizationName = summary.organization.name || user.organizationName || "Semua organisasi";
+  const organizationName = summary?.organization.name || user.organizationName || "Semua organisasi";
   const regionParts = [];
-  if (summary.organization.rtNumber) {
+  if (summary?.organization.rtNumber) {
     regionParts.push(`RT ${summary.organization.rtNumber}`);
   }
-  if (summary.organization.rwNumber) {
+  if (summary?.organization.rwNumber) {
     regionParts.push(`RW ${summary.organization.rwNumber}`);
   }
   const region = user.region || regionParts.join(" / ") || "Semua wilayah";
 
   currentUser = { ...user, organizationName, region };
-  dashboardData = {
+  dashboardData = summary ? {
     organizationName,
     region,
     residents: summary.stats.residents,
@@ -706,10 +974,15 @@ async function openApiDashboard(user) {
     collected: summary.period.collected,
     billed: summary.period.billed,
     paidFamilies: summary.period.paidFamilies,
-    pendingPayments: summary.period.pendingPayments
+    pendingPayments: summary.period.pendingPayments,
+    summaryAvailable: true
+  } : {
+    organizationName,
+    region,
+    summaryAvailable: false
   };
   announcements = announcementResponse.items;
-  activities = summary.activities || [];
+  activities = summary?.activities || [];
   notifications = notificationResponse.items;
   unreadNotificationCount = notificationResponse.unreadCount;
   isConnectedToApi = true;
@@ -792,7 +1065,13 @@ document.addEventListener("click", (event) => {
 
   const pageButton = target.closest("[data-page]");
   if (pageButton) {
-    activePage = pageButton.dataset.page;
+    const page = pageButton.dataset.page;
+    if (page !== "home" && !getAccessibleModules().some((module) => module.id === page)) {
+      return;
+    }
+    activePage = page;
+    activeFeature = null;
+    featureRequestId += 1;
     globalSearch.value = "";
     renderPage();
     closeMobileMenu();
@@ -801,7 +1080,30 @@ document.addEventListener("click", (event) => {
 
   const featureButton = target.closest("[data-feature-module]");
   if (featureButton) {
-    openFeaturePreview(featureButton.dataset.featureModule, Number(featureButton.dataset.featureIndex));
+    const moduleId = featureButton.dataset.featureModule;
+    const featureIndex = Number(featureButton.dataset.featureIndex);
+    if (!canAccessFeature(moduleId, featureIndex)) {
+      return;
+    }
+    activeFeature = {
+      moduleId,
+      featureIndex
+    };
+    featureRows = [];
+    featureLoading = false;
+    featureError = "";
+    renderPage();
+    pageContent.focus({ preventScroll: true });
+    return;
+  }
+
+  if (target.closest("[data-resource-refresh]") && activeFeature) {
+    const module = modules.find((item) => item.id === activeFeature.moduleId);
+    const feature = module?.features[activeFeature.featureIndex];
+    const endpoint = resourcePath(activeFeature.moduleId, activeFeature.featureIndex);
+    if (module && feature && endpoint) {
+      void loadFeatureData(module, feature, activeFeature.featureIndex, endpoint);
+    }
     return;
   }
 
@@ -826,11 +1128,6 @@ document.addEventListener("click", (event) => {
 
   if (target.closest("#sidebar-backdrop")) {
     closeMobileMenu();
-    return;
-  }
-
-  if (target.closest("#dialog-close") || target.closest("#dialog-done")) {
-    dialog.close();
     return;
   }
 
@@ -884,15 +1181,21 @@ document.querySelector("#toggle-password").addEventListener("click", (event) => 
   event.currentTarget.setAttribute("aria-label", `${showPassword ? "Sembunyikan" : "Tampilkan"} kata sandi`);
 });
 
-dialog.addEventListener("click", (event) => {
-  if (event.target === dialog) {
-    dialog.close();
-  }
-});
-
 globalSearch.addEventListener("input", () => {
   if (!appShell.hidden) {
     renderPage();
+  }
+});
+
+pageContent.addEventListener("input", (event) => {
+  if (event.target instanceof HTMLInputElement && event.target.id === "resource-search") {
+    const container = document.querySelector("#resource-data");
+    const module = modules.find((item) => item.id === activeFeature?.moduleId);
+    const feature = module?.features[activeFeature.featureIndex];
+    const endpoint = activeFeature ? resourcePath(activeFeature.moduleId, activeFeature.featureIndex) : null;
+    if (container && module && feature && endpoint) {
+      container.innerHTML = renderWorkspaceData(module, feature, endpoint);
+    }
   }
 });
 

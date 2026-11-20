@@ -35,7 +35,7 @@ function findActiveAssignment(PDO $connection, int $userId): ?array
 
 function authenticatedUser(PDO $connection): array
 {
-    $token = $_COOKIE['rtrw_session'] ?? '';
+    $token = requestAccessToken();
     if (!is_string($token) || !preg_match('/\A[a-f0-9]{64}\z/', $token)) {
         jsonError(401, 'unauthenticated', 'Silakan masuk untuk melanjutkan.');
     }
@@ -89,6 +89,32 @@ function authenticatedUser(PDO $connection): array
     return $user;
 }
 
+function requestAccessToken(): string
+{
+    $authorization = $_SERVER['HTTP_AUTHORIZATION']
+        ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+        ?? '';
+    if ($authorization === '' && function_exists('getallheaders')) {
+        $headers = getallheaders();
+        if (is_array($headers)) {
+            foreach ($headers as $name => $value) {
+                if (strtolower((string) $name) === 'authorization') {
+                    $authorization = $value;
+                    break;
+                }
+            }
+        }
+    }
+    if (is_string($authorization) && preg_match('/\ABearer ([a-f0-9]{64})\z/i', $authorization, $matches)) {
+        return strtolower($matches[1]);
+    }
+
+    $cookieToken = $_COOKIE['rtrw_session'] ?? '';
+    return is_string($cookieToken) && preg_match('/\A[a-f0-9]{64}\z/', $cookieToken)
+        ? $cookieToken
+        : '';
+}
+
 function requirePermission(PDO $connection, array $user, string $permissionCode): array
 {
     if ($user['role_code'] === 'super_admin') {
@@ -129,7 +155,7 @@ function setAuthCookie(string $value, int $expiresAt, bool $secure): bool
     ]);
 }
 
-function publicUser(array $user): array
+function publicUser(PDO $connection, array $user): array
 {
     $regionParts = [];
     if (!empty($user['rt_number'])) {
@@ -139,12 +165,33 @@ function publicUser(array $user): array
         $regionParts[] = 'RW ' . $user['rw_number'];
     }
 
+    $permissionStatement = $connection->prepare(
+        'SELECT ia.kode, pia.terbatas
+        FROM peran_izin_akses pia
+        INNER JOIN izin_akses ia ON ia.id = pia.id_izin_akses
+        INNER JOIN penugasan_pengguna pp ON pp.id_peran = pia.id_peran
+        WHERE pp.id = :assignment_id
+          AND pp.aktif = 1
+        ORDER BY ia.kode'
+    );
+    $permissionStatement->execute(['assignment_id' => $user['assignment_id']]);
+    $permissionRows = $permissionStatement->fetchAll();
+    $permissions = array_column($permissionRows, 'kode');
+    $restrictedPermissions = array_column(
+        array_filter($permissionRows, static function (array $permission): bool {
+            return (int) $permission['terbatas'] === 1;
+        }),
+        'kode'
+    );
+
     return [
         'id' => (int) $user['id'],
         'name' => $user['name'],
         'email' => $user['email'],
         'role' => $user['role_name'],
         'roleCode' => $user['role_code'],
+        'permissions' => array_values(array_map('strval', $permissions)),
+        'restrictedPermissions' => array_values(array_map('strval', $restrictedPermissions)),
         'organizationId' => $user['organization_id'] === null ? null : (int) $user['organization_id'],
         'organizationName' => $user['organization_name'],
         'rwId' => $user['rw_id'] === null ? null : (int) $user['rw_id'],

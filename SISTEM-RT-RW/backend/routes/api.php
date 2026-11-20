@@ -5,6 +5,7 @@ require_once dirname(__DIR__) . '/controllers/AuthController.php';
 require_once dirname(__DIR__) . '/controllers/DashboardController.php';
 require_once dirname(__DIR__) . '/controllers/AnnouncementController.php';
 require_once dirname(__DIR__) . '/controllers/NotificationController.php';
+require_once dirname(__DIR__) . '/controllers/ResourceController.php';
 
 function dispatchApi(PDO $connection, array $configuration): void
 {
@@ -41,6 +42,9 @@ function dispatchApi(PDO $connection, array $configuration): void
     if ($route === 'notifications' && $method === 'GET') {
         listNotifications($connection, authenticatedUser($connection));
     }
+    if (preg_match('/\Aresources\/([a-z-]+)\z/', $route, $resourceMatch) === 1 && $method === 'GET') {
+        listResource($connection, authenticatedUser($connection), $resourceMatch[1]);
+    }
 
     $knownRoutes = [
         'health' => ['GET'],
@@ -51,6 +55,9 @@ function dispatchApi(PDO $connection, array $configuration): void
         'announcements' => ['GET'],
         'notifications' => ['GET'],
     ];
+    if (preg_match('/\Aresources\/[a-z-]+\z/', $route) === 1) {
+        $knownRoutes[$route] = ['GET'];
+    }
     if (isset($knownRoutes[$route])) {
         header('Allow: ' . implode(', ', $knownRoutes[$route]));
         jsonError(405, 'method_not_allowed', 'Metode HTTP tidak diizinkan untuk endpoint ini.');

@@ -9,9 +9,13 @@ function login(PDO $connection, array $configuration): void
     $body = jsonRequestBody();
     $identity = $body['identity'] ?? '';
     $password = $body['password'] ?? '';
+    $client = $body['client'] ?? 'web';
 
-    if (!is_string($identity) || !is_string($password)) {
+    if (!is_string($identity) || !is_string($password) || !is_string($client)) {
         jsonError(422, 'validation_error', 'Email/telepon dan kata sandi wajib diisi.');
+    }
+    if (!in_array($client, ['web', 'mobile', 'desktop'], true)) {
+        jsonError(422, 'validation_error', 'Jenis client harus web, mobile, atau desktop.');
     }
 
     $identity = trim($identity);
@@ -135,21 +139,25 @@ function login(PDO $connection, array $configuration): void
         jsonError(500, 'session_error', 'Sesi tidak dapat dibuat. Coba lagi.');
     }
 
-    jsonSuccess([
-        'user' => publicUser($user),
+    $response = [
+        'user' => publicUser($connection, $user),
         'expiresAt' => date(DATE_ATOM, $expiresAt),
-    ]);
+    ];
+    if ($client !== 'web') {
+        $response['accessToken'] = $token;
+    }
+    jsonSuccess($response);
 }
 
 function currentUser(PDO $connection): void
 {
     $user = authenticatedUser($connection);
-    jsonSuccess(['user' => publicUser($user)]);
+    jsonSuccess(['user' => publicUser($connection, $user)]);
 }
 
 function logout(PDO $connection, array $configuration): void
 {
-    $token = $_COOKIE['rtrw_session'] ?? '';
+    $token = requestAccessToken();
     if (is_string($token) && preg_match('/\A[a-f0-9]{64}\z/', $token)) {
         $statement = $connection->prepare(
             'UPDATE sesi_pengguna

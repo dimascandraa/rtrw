@@ -55,7 +55,84 @@ SISTEM-RT-RW/
 | Dias | Web dan testing |
 | Taufik | Desktop |
 
-## 4. Penggunaan GitHub Bersama
+## 4. Cara Menjalankan Aplikasi
+
+Jalankan perintah dari folder `SISTEM-RT-RW` (folder induk aplikasi), bukan dari folder repository paling luar.
+
+### Persiapan backend dan database
+
+Persyaratan:
+
+- PHP 8.0 atau lebih baru dengan ekstensi `pdo_mysql`.
+- MySQL atau MariaDB.
+- Java 17 atau lebih baru untuk Desktop.
+- Android Studio untuk Mobile.
+
+1. Buat database dan pengguna MySQL.
+2. Salin file konfigurasi backend:
+
+   ```powershell
+   Copy-Item backend\.env.example backend\.env
+   ```
+
+3. Sesuaikan `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, dan `DB_PASSWORD` pada `backend\.env`.
+4. Impor `database\migrations\schema.sql`, lalu `database\migrations\seed.sql` melalui MySQL CLI, phpMyAdmin, atau MySQL Workbench.
+5. Aktifkan ekstensi `pdo_mysql` pada konfigurasi PHP jika belum aktif.
+
+Akun contoh setelah seed:
+
+```text
+Email: adminrw@contoh.test
+Kata sandi: Password123
+```
+
+### Menjalankan Web
+
+```powershell
+cd D:\Dimas\Kuliah\Semester 5\Pemrograman Berbasis Platform\rtrw\SISTEM-RT-RW
+php -S 127.0.0.1:8000 -t web backend\public\router.php
+```
+
+Buka <http://127.0.0.1:8000/>. Jangan membuka `web\index.html` langsung melalui `file://` karena halaman memerlukan sesi dan panggilan API melalui backend.
+
+Berhenti menjalankan server dengan menekan `Ctrl+C` pada terminal.
+
+### Menjalankan Desktop
+
+Pastikan backend sudah berjalan di `http://127.0.0.1:8000`, lalu jalankan JAR yang sudah tersedia:
+
+```powershell
+cd D:\Dimas\Kuliah\Semester 5\Pemrograman Berbasis Platform\rtrw\SISTEM-RT-RW\desktop
+java -jar out\rtrw-desktop.jar
+```
+
+Alamat backend Desktop diatur pada `desktop\config.properties`:
+
+```properties
+api.base.url=http://127.0.0.1:8000
+```
+
+Folder `desktop\out` berisi hasil build Desktop yang siap dijalankan. Folder `desktop\src` belum tersedia di repository saat ini; JAR dapat dijalankan bila Java sudah terpasang, tetapi pengembangan ulang atau build dari source memerlukan source Java dan skrip build yang lengkap.
+
+### Menjalankan Mobile
+
+Saat ini folder `mobile` masih belum berisi proyek Android dan belum dapat dijalankan sebagai aplikasi.
+
+Setelah proyek Android Native Java ditambahkan, langkah umumnya:
+
+1. Buka Android Studio.
+2. Pilih **Open** dan pilih folder `SISTEM-RT-RW\mobile`.
+3. Tunggu proses sinkronisasi Gradle selesai.
+4. Aktifkan emulator Android atau sambungkan perangkat melalui USB.
+5. Pilih konfigurasi aplikasi, lalu tekan **Run**.
+
+Atur alamat backend menjadi `http://10.0.2.2:8000` untuk Emulator Android. Gunakan alamat IP LAN komputer untuk perangkat fisik, misalnya `http://192.168.1.10:8000`, dan jalankan PHP agar dapat diakses dari jaringan lokal:
+
+```powershell
+php -S 0.0.0.0:8000 -t web backend\public\router.php
+```
+
+## 5. Penggunaan GitHub Bersama
 
 Gunakan satu repository utama bernama `SISTEM-RT-RW`.
 
@@ -176,7 +253,7 @@ Setiap Pull Request harus menjelaskan:
 
 Minimal satu anggota lain melakukan review sebelum merge.
 
-## 5. Mengatasi Merge Conflict
+## 6. Mengatasi Merge Conflict
 
 Jika terjadi konflik:
 
@@ -205,7 +282,7 @@ git push
 
 Jangan menggunakan `git push --force` pada branch bersama atau branch utama.
 
-## 6. File yang Tidak Boleh Diunggah
+## 7. File yang Tidak Boleh Diunggah
 
 Buat `.gitignore` pada folder utama.
 
@@ -242,7 +319,7 @@ Jangan mengunggah:
 
 Gunakan data dummy untuk pengembangan dan demo.
 
-## 7. Aturan Integrasi Aplikasi
+## 8. Aturan Integrasi Aplikasi
 
 1. Semua aplikasi menggunakan satu Backend API.
 2. Backend menjadi satu-satunya pihak yang mengakses MySQL.
@@ -264,7 +341,7 @@ GET  /api/announcements
 GET  /api/reports
 ```
 
-## 8. Kesepakatan Kerja Tim
+## 9. Kesepakatan Kerja Tim
 
 - Satu repository untuk seluruh aplikasi.
 - Setiap anggota memiliki tanggung jawab utama.

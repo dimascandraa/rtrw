@@ -1,5 +1,9 @@
 (function () {
-  const apiBaseUrl = new URL("../backend/public/api/v1", window.location.href)
+  const isDirectWebDirectory = /\/web(?:\/|$)/.test(window.location.pathname);
+  const apiBaseUrl = new URL(
+    isDirectWebDirectory ? "../backend/public/api/v1" : "/api/v1",
+    window.location.href
+  )
     .toString()
     .replace(/\/+$/, "");
 

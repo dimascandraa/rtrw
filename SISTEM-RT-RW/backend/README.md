@@ -35,27 +35,38 @@ Semua respons JSON menggunakan format `{ "data": ... }` atau `{ "error": { "code
 |---|---|---|
 | `GET` | `/api/v1/health` | Memeriksa koneksi database |
 | `POST` | `/api/v1/auth/login` | Masuk dengan email/telepon dan kata sandi |
+| `POST` | `/api/v1/auth/register` | Mendaftarkan akun baru berstatus menunggu persetujuan |
 | `GET` | `/api/v1/auth/me` | Mendapatkan pengguna dari sesi aktif |
 | `POST` | `/api/v1/auth/logout` | Mencabut sesi aktif |
+| `PATCH` | `/api/v1/auth/profile` | Mengubah nama dan kontak akun sendiri |
+| `POST` | `/api/v1/auth/password` | Mengganti kata sandi dengan verifikasi kata sandi saat ini |
+| `GET` | `/api/v1/registrations/pending` | Daftar registrasi yang dapat ditinjau admin/Ketua RW/Ketua RT |
+| `POST` | `/api/v1/registrations/{id}/approve` | Menyetujui akun sebagai Warga dan menghubungkannya ke data warga |
+| `POST` | `/api/v1/letters` | Mengirim pengajuan surat milik warga yang sedang masuk |
+| `POST` | `/api/v1/letters/{id}/decision` | Menyetujui atau menolak pengajuan sesuai wilayah |
 | `GET` | `/api/v1/dashboard/summary` | Statistik warga, keluarga, tagihan, dan kas |
 | `GET` | `/api/v1/announcements?limit=5` | Pengumuman yang terlihat di wilayah pengguna |
 | `GET` | `/api/v1/notifications?limit=5` | Notifikasi milik pengguna dan jumlah yang belum dibaca |
+| `GET` | `/api/v1/resources/{resource}` | Daftar data fitur dengan izin dan batas wilayah |
 
 Body login:
 
 ```json
 {
   "identity": "adminrw@contoh.test",
-  "password": "Password123"
+  "password": "Password123",
+  "client": "web"
 }
 ```
 
-Login membuat token acak; hanya hash SHA-256 token yang disimpan di `sesi_pengguna`. Token asli dikirim sebagai cookie `HttpOnly`, `SameSite=Lax`, dan `Secure` ketika HTTPS aktif. Kata sandi diverifikasi dengan `password_verify()`. Lima kegagalan login mengunci akun selama 15 menit.
+Web dapat menghilangkan properti `client` (default `web`); token hanya dikirim lewat cookie `HttpOnly`, `SameSite=Lax`, dan `Secure` ketika HTTPS aktif. Aplikasi native mengirim `client: "mobile"` atau `client: "desktop"` dan menerima `accessToken`. Kirim token pada setiap permintaan berikutnya dengan header `Authorization: Bearer <accessToken>`. Token native sama dengan token cookie; hanya hash SHA-256 yang disimpan di `sesi_pengguna`. Logout mencabut token yang digunakan. Kata sandi diverifikasi dengan `password_verify()`. Lima kegagalan login mengunci akun selama 15 menit.
 
-Endpoint dashboard dan pengumuman memeriksa izin pada `peran_izin_akses`/`izin_akses` dan membatasi query berdasarkan organisasi serta penugasan wilayah. Endpoint API mengembalikan error generik dan detail teknis hanya dicatat pada log server.
+Untuk aplikasi web lintas origin, isi `APP_CORS_ALLOWED_ORIGINS` pada `backend/.env` dengan daftar origin frontend yang dipisahkan koma, tanpa wildcard, misalnya `https://web.contoh.test,https://admin.contoh.test`. Biarkan kosong jika frontend satu origin. CORS memakai allowlist eksplisit dan mengizinkan header `Authorization`.
 
-## Pengembangan endpoint
+Endpoint data memeriksa izin pada `peran_izin_akses`/`izin_akses`, membatasi query berdasarkan organisasi/wilayah, dan menolak data yang tidak aman untuk akses terbatas. Daftar resource, filter, dan format respons ada di [`documentation/API/README.md`](../documentation/API/README.md). Endpoint API mengembalikan error generik dan detail teknis hanya dicatat pada log server.
 
-Tambahkan endpoint berdasarkan resource dan aksi bisnis—misalnya `/warga`, `/tagihan`, atau `/pembayaran`—bukan endpoint terpisah untuk setiap halaman. Halaman dashboard boleh memakai endpoint ringkasan agregat. Saat fitur CRUD dibuat, validasi input, pemeriksaan izin, dan filter `id_organisasi` harus diterapkan di backend.
+Registrasi harus menggunakan nomor telepon yang sama dengan data warga aktif. Pendaftar tidak dapat masuk atau memilih peran sebelum admin, Ketua RW, atau Ketua RT menyetujuinya. Persetujuan hanya mengaktifkan peran Warga dan menghubungkan akun berdasarkan telepon; perubahan peran tidak dapat dilakukan sendiri dari profil. Kata sandi memakai hash `password_hash()`, dan perubahan kata sandi mencabut sesi lain milik pengguna.
 
-Saat ini login, ringkasan beranda, pengumuman, dan notifikasi sudah menggunakan API. Kartu fitur modul lain masih berupa pratinjau UI dan belum memiliki operasi CRUD.
+Ekspor laporan tersedia pada fitur **Laporan PDF/Excel** di web. File Excel berisi workbook dengan sheet Kas, Tagihan, dan Pembayaran; seluruh halaman data diambil melalui API dengan batas izin dan wilayah. Opsi PDF membuka dialog cetak browser sehingga pengguna dapat memilih **Simpan sebagai PDF**.
+
+Operasi tulis hanya tersedia pada endpoint spesifik yang memvalidasi data, izin, organisasi/wilayah, audit log, dan transaksi bisnis. Jangan menambah operasi tulis generik ke tabel.

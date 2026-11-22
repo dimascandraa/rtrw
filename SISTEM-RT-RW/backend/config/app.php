@@ -27,5 +27,24 @@ function appConfiguration(): array
         'timezone' => $timezone,
         'session_ttl' => $sessionTtl,
         'secure_cookie' => $secureCookie,
+        'cors_allowed_origins' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', getenv('APP_CORS_ALLOWED_ORIGINS') ?: '')
+        ))),
     ];
+}
+
+function applyCorsHeaders(array $configuration): void
+{
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if (!is_string($origin) || !in_array($origin, $configuration['cors_allowed_origins'], true)) {
+        return;
+    }
+
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Accept, Authorization, Content-Type');
+    header('Access-Control-Max-Age: 600');
+    header('Vary: Origin');
 }

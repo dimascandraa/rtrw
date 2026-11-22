@@ -2,7 +2,7 @@
 
 Folder ini berisi rancangan antarmuka (UI/UX) **Sistem Informasi RT/RW** milik kelompok kami. Rancangan masih berupa **draft desain** dan bukan frontend final. Isi tampilan mengikuti ERD (41 tabel) serta daftar modul dan fitur yang sudah disepakati.
 
-**Cakupan:** desain **login, beranda, 11 modul (menu)**, dan **26 fitur** di dalam modul. Semuanya tersedia dalam **mode terang dan gelap** (total 78 gambar).
+**Status tahap ini:** desain **login, beranda, dan 11 modul (menu)**, masing-masing dalam mode terang dan gelap (26 gambar). Desain tampilan **fitur di dalam tiap modul** dikerjakan pada tahap berikutnya.
 
 ## Daftar Isi
 
@@ -495,19 +495,16 @@ flowchart TD
 ## 7. Catatan
 
 1. **Status:** semua gambar adalah **draft desain**, bukan tampilan final. Warna, tata letak, dan istilah masih bisa berubah mengikuti masukan kelompok atau dosen.
-2. **Cakupan:** login, beranda, 11 modul, dan 26 fitur, masing-masing dalam mode terang dan gelap.
-3. **Data contoh:** nama warga, nominal, dan tanggal hanya dummy. NIK dan nomor telepon sengaja disamarkan.
-4. **Kolom tabel:** kolom yang tampil dipilih dari kolom kunci pada ERD dan belum mencakup seluruh kolom di `kamus-data.md`. Kolom lengkap disesuaikan saat implementasi.
-5. **Yang belum dirancang:** form tambah atau ubah data, halaman detail, dan alur klik tiap tombol aksi. Desain saat ini berfokus pada halaman daftar atau ringkasan tiap fitur.
-6. **Hak akses:** tampilan yang muncul akan berbeda per peran. Misalnya warga hanya melihat tagihan dan surat miliknya, sedangkan bendahara melihat seluruh data keuangan. Draft ini memperlihatkan tampilan seperti yang dilihat admin.
-7. **Ukuran gambar:** diambil dalam tampilan desktop. Pada layar kecil, sidebar akan berubah menjadi menu geser.
-8. **Acuan:** ERD pada `erd.md` adalah sumber utama. Bila ERD atau daftar fitur berubah, gambar di folder ini perlu diperbarui.
+2. **Cakupan tahap ini:** login, beranda, dan 11 halaman modul (menu). Tampilan isi 26 fitur di dalam modul **belum dirancang** dan akan menyusul.
+3. **Mode tampilan:** setiap halaman tersedia dalam mode terang dan gelap.
+4. **Ukuran gambar:** diambil dalam tampilan desktop. Pada layar kecil, sidebar akan berubah menjadi menu geser.
+5. **Data contoh:** nama pengguna (Admin RT) dan wilayah (RT 03 / RW 05) hanya contoh.
+6. **Hak akses:** menu yang tampil akan menyesuaikan peran pengguna (Super Admin, Admin Perumahan, Ketua RT/RW, Bendahara, Pengurus, Warga). Draft ini memperlihatkan seluruh menu seperti yang dilihat admin.
+7. **Acuan:** ERD pada `erd.md` adalah sumber utama. Bila ERD atau daftar modul berubah, gambar di folder ini perlu diperbarui.
 
 ### Rencana pengembangan
 
 | Tahap | Isi | Status |
 |---|---|---|
 | 1 | Login, beranda, dan 11 modul (terang dan gelap) | Selesai |
-| 2 | Tampilan isi 26 fitur (terang dan gelap) | Selesai |
-| 3 | Flowchart alur sistem (utama, modul, dan fitur) | Selesai |
-| 4 | Form tambah/ubah, halaman detail, dan alur aksi | Direncanakan |
+| 2 | Tampilan isi tiap fitur (26 fitur) | Direncanakan |

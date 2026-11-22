@@ -40,9 +40,9 @@
             <span class="brand-mark">RW</span>
             <span>Sistem Informasi RT/RW</span>
           </div>
-          <p class="eyebrow">Selamat datang kembali</p>
-          <h2>Masuk</h2>
-          <p class="muted login-intro">Gunakan email atau nomor telepon yang terdaftar.</p>
+          <p id="login-eyebrow" class="eyebrow">Selamat datang kembali</p>
+          <h2 id="login-title">Masuk</h2>
+          <p id="login-intro" class="muted login-intro">Gunakan email atau nomor telepon yang terdaftar.</p>
           <form id="login-form">
             <label for="login-identity">Email atau telepon</label>
             <input id="login-identity" name="identity" type="text" autocomplete="username" placeholder="nama@email.com" required>
@@ -57,6 +57,20 @@
             </div>
             <button class="button button-primary login-submit" type="submit">Masuk</button>
           </form>
+          <form id="register-form" hidden>
+            <label for="register-name">Nama lengkap</label>
+            <input id="register-name" name="name" type="text" autocomplete="name" maxlength="150" required>
+            <label for="register-email">Email</label>
+            <input id="register-email" name="email" type="email" autocomplete="email" maxlength="150" placeholder="nama@email.com">
+            <label for="register-phone">Nomor telepon</label>
+            <input id="register-phone" name="phone" type="tel" autocomplete="tel" maxlength="20" placeholder="08xxxxxxxxxx" required>
+            <label for="register-password">Kata sandi (minimal 8 karakter)</label>
+            <input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+            <button class="button button-primary login-submit" type="submit">Daftar akun</button>
+            <p class="registration-note">Akun baru menunggu persetujuan admin, Ketua RW, atau Ketua RT. Gunakan nomor telepon yang terdaftar pada data warga.</p>
+            <p class="login-footnote"><button id="show-login" class="text-button" type="button">Sudah punya akun? Masuk</button></p>
+          </form>
+          <p id="login-footnote" class="login-footnote">Belum punya akun? <button id="show-register" class="text-button" type="button">Daftar sebagai warga</button></p>
           <div class="demo-callout">
             <div>
               <span class="demo-dot" aria-hidden="true"></span>
@@ -93,6 +107,7 @@
             <strong id="profile-name">Rina Wijaya</strong>
             <span id="profile-role">Admin RW · RW 05</span>
           </div>
+          <button id="account-settings-button" class="button button-outline" type="button" data-page="account">Akun</button>
           <button id="logout-button" class="button button-outline logout-button" type="button">Keluar</button>
         </div>
       </aside>
@@ -133,25 +148,6 @@
         </footer>
       </div>
     </div>
-
-    <dialog id="feature-dialog" class="feature-dialog" aria-labelledby="dialog-title">
-      <div class="dialog-top">
-        <span id="dialog-icon" class="feature-icon dialog-icon" aria-hidden="true"></span>
-        <button id="dialog-close" class="icon-button dialog-close" type="button" aria-label="Tutup">×</button>
-      </div>
-      <p class="eyebrow">Pratinjau fitur</p>
-      <h2 id="dialog-title"></h2>
-      <p id="dialog-description" class="muted"></p>
-      <div class="dialog-note">
-        <span class="dialog-note-icon" aria-hidden="true">i</span>
-        <p>Rancangan saat ini mencakup navigasi modul. Tampilan operasional fitur akan dibuat pada tahap berikutnya dan memerlukan integrasi REST API.</p>
-      </div>
-      <div class="dialog-tables">
-        <strong>Tabel database terkait</strong>
-        <div id="dialog-tables-list" class="table-tags"></div>
-      </div>
-      <button id="dialog-done" class="button button-primary dialog-done" type="button">Mengerti</button>
-    </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </body>

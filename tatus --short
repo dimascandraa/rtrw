@@ -1,0 +1,59 @@
+[1mdiff --git a/SISTEM-RT-RW/desktop/src/main/java/id/rtrw/desktop/config/AppConfig.java b/SISTEM-RT-RW/desktop/src/main/java/id/rtrw/desktop/config/AppConfig.java[m
+[1mindex 7819005..96129da 100644[m
+[1m--- a/SISTEM-RT-RW/desktop/src/main/java/id/rtrw/desktop/config/AppConfig.java[m
+[1m+++ b/SISTEM-RT-RW/desktop/src/main/java/id/rtrw/desktop/config/AppConfig.java[m
+[36m@@ -87,15 +87,12 @@[m [mpublic final class AppConfig {[m
+         return role != null && blockedRoles().contains(role.trim().toLowerCase(Locale.ROOT));[m
+     }[m
+ [m
+[31m-    public boolean save() {[m
+[32m+[m[32m    public void save() throws IOException {[m
+         if (file == null) {[m
+[31m-            return false;[m
+[32m+[m[32m            throw new IOException("Berkas konfigurasi tidak tersedia.");[m
+         }[m
+         try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {[m
+             props.store(writer, "Konfigurasi Aplikasi RT/RW Desktop. Jangan simpan password atau token di sini.");[m
+[31m-            return true;[m
+[31m-        } catch (IOException e) {[m
+[31m-            return false;[m
+         }[m
+     }[m
+ }[m
+[1mdiff --git a/SISTEM-RT-RW/desktop/src/main/java/id/rtrw/desktop/ui/LoginFrame.java b/SISTEM-RT-RW/desktop/src/main/java/id/rtrw/desktop/ui/LoginFrame.java[m
+[1mindex e10e68c..4a93764 100644[m
+[1m--- a/SISTEM-RT-RW/desktop/src/main/java/id/rtrw/desktop/ui/LoginFrame.java[m
+[1m+++ b/SISTEM-RT-RW/desktop/src/main/java/id/rtrw/desktop/ui/LoginFrame.java[m
+[36m@@ -9,6 +9,7 @@[m [mimport javax.swing.Box;[m
+ import javax.swing.BoxLayout;[m
+ import javax.swing.JFrame;[m
+ import javax.swing.JLabel;[m
+[32m+[m[32mimport javax.swing.JOptionPane;[m
+ import javax.swing.JPanel;[m
+ import javax.swing.JPasswordField;[m
+ import javax.swing.JTextField;[m
+[36m@@ -24,6 +25,7 @@[m [mimport java.awt.Graphics;[m
+ import java.awt.Graphics2D;[m
+ import java.awt.GridLayout;[m
+ import java.awt.RenderingHints;[m
+[32m+[m[32mimport java.io.IOException;[m
+ import java.util.Arrays;[m
+ import java.util.concurrent.ExecutionException;[m
+ [m
+[36m@@ -196,7 +198,15 @@[m [mpublic final class LoginFrame extends JFrame {[m
+                             + "Aplikasi desktop khusus pengurus RT/RW.", true);[m
+                     return;[m
+                 }[m
+[31m-                config.save(); // simpan alamat server untuk pemakaian berikutnya[m
+[32m+[m[32m                try {[m
+[32m+[m[32m                    config.save();[m
+[32m+[m[32m                } catch (IOException ex) {[m
+[32m+[m[32m                    JOptionPane.showMessageDialog(LoginFrame.this,[m
+[32m+[m[32m                            "Login berhasil, tetapi alamat server tidak dapat disimpan. "[m
+[32m+[m[32m                                    + "Alamat ini hanya berlaku sampai aplikasi ditutup.\n\n"[m
+[32m+[m[32m                                    + ex.getMessage(),[m
+[32m+[m[32m                            "Konfigurasi tidak tersimpan", JOptionPane.WARNING_MESSAGE);[m
+[32m+[m[32m                }[m
+                 new MainFrame(config, api, "beranda").setVisible(true);[m
+                 dispose();[m
+             }[m

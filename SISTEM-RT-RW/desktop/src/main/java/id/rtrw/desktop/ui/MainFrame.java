@@ -187,12 +187,21 @@ public final class MainFrame extends JFrame implements SessionListener {
                 break;
             case "announcement-list":
                 page = new DataTablePanel(api, "Pengumuman",
+<<<<<<< HEAD
                         "Pengumuman RT/RW untuk wilayah Anda.", api::announcements, this);
                 break;
             case "notification-list":
                 page = new DataTablePanel(api, "Notifikasi",
                         "Notifikasi untuk akun Anda. Kolom waktu dibaca kosong berarti belum dibaca.",
                         api::notifications, this);
+=======
+                        "Pengumuman RT/RW untuk warga.", "/api/announcements", this);
+                break;
+            case "report-list":
+                page = new DataTablePanel(api, "Laporan",
+                        "Daftar laporan kas, iuran, dan tunggakan. Gunakan Ekspor CSV untuk membuka di Excel.",
+                        "/api/reports", this);
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                 break;
             case "dashboard-stats":
                 page = new DashboardPanel(api, this);
@@ -233,8 +242,13 @@ public final class MainFrame extends JFrame implements SessionListener {
     }
 
     private static boolean isFeaturePage(String key) {
+<<<<<<< HEAD
         return "dashboard-stats".equals(key) || "announcement-list".equals(key)
                 || "notification-list".equals(key);
+=======
+        return key != null && (key.endsWith("-list") || key.equals("payment-verification")
+                || key.equals("dashboard-stats"));
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     }
 
     // ------------------------------------------------------------------ sesi dan tema
@@ -249,11 +263,15 @@ public final class MainFrame extends JFrame implements SessionListener {
     }
 
     private void logout(String message) {
+<<<<<<< HEAD
         try {
             api.logoutServer();
         } catch (Exception ignored) {
             api.logout();
         }
+=======
+        api.logout();
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
         LoginFrame login = new LoginFrame(config, api, message);
         login.setVisible(true);
         dispose();

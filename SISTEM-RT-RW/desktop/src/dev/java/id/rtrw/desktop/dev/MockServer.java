@@ -30,7 +30,10 @@ public final class MockServer {
     private final List<Map<String, Object>> invoices = new ArrayList<>();
     private final List<Map<String, Object>> payments = new ArrayList<>();
     private final List<Map<String, Object>> announcements = new ArrayList<>();
+<<<<<<< HEAD
     private final List<Map<String, Object>> notifications = new ArrayList<>();
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     private final List<Map<String, Object>> reports = new ArrayList<>();
 
     private MockServer() {
@@ -74,6 +77,7 @@ public final class MockServer {
         announcements.add(row("id", 3L, "judul", "Rapat pengurus bulanan", "target", "Pengurus",
                 "tanggal", "2026-11-14", "status", "Draft"));
 
+<<<<<<< HEAD
         notifications.add(row("id", 1L, "title", "Pembayaran terverifikasi",
                 "message", "Pembayaran iuran November telah diterima.",
                 "type", "pembayaran", "readAt", null, "createdAt", "2026-11-10 09:00:00"));
@@ -81,6 +85,8 @@ public final class MockServer {
                 "message", "Rapat pengurus akan dilaksanakan Jumat malam.",
                 "type", "informasi", "readAt", "2026-11-11 08:00:00", "createdAt", "2026-11-09 16:00:00"));
 
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
         reports.add(row("id", 1L, "nama_laporan", "Laporan kas bulanan", "periode", "Oktober 2026",
                 "format", "PDF/Excel", "status", "Tersedia"));
         reports.add(row("id", 2L, "nama_laporan", "Rekap iuran", "periode", "November 2026",
@@ -123,6 +129,7 @@ public final class MockServer {
             Map<String, Object> body = raw.trim().isEmpty() ? new LinkedHashMap<String, Object>()
                     : (Map<String, Object>) Json.parse(raw);
 
+<<<<<<< HEAD
             if (path.equals("/api/v1/health") && method.equals("GET")) {
                 send(ex, 200, row("data", row("status", "ok")));
                 return;
@@ -135,11 +142,18 @@ public final class MockServer {
                 send(ex, 200, ok(row("message", "Anda telah keluar")));
                 return;
             }
+=======
+            if (path.equals("/api/login") && method.equals("POST")) {
+                login(ex, body);
+                return;
+            }
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
             if (!("Bearer " + TOKEN).equals(ex.getRequestHeaders().getFirst("Authorization"))) {
                 send(ex, 401, fail("Sesi tidak valid. Silakan login."));
                 return;
             }
 
+<<<<<<< HEAD
             if (path.equals("/api/v1/auth/me") && method.equals("GET")) {
                 send(ex, 200, ok(row("user", row("id", 1L, "name", "Bu Sari (Bendahara)",
                         "email", "admin@rtrw.test", "role", "Bendahara"))));
@@ -165,6 +179,8 @@ public final class MockServer {
                 return;
             }
 
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
             switch (path) {
                 case "/api/residents":
                     if (method.equals("GET")) {
@@ -197,8 +213,12 @@ public final class MockServer {
     }
 
     private void login(HttpExchange ex, Map<String, Object> body) throws IOException {
+<<<<<<< HEAD
         Object id = body.containsKey("identity") ? body.get("identity")
                 : body.containsKey("email") ? body.get("email") : body.get("telepon");
+=======
+        Object id = body.containsKey("email") ? body.get("email") : body.get("telepon");
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
         Object pw = body.get("password");
         if ("admin@rtrw.test".equals(id) && "admin123".equals(pw)) {
             Map<String, Object> data = row("token", TOKEN,

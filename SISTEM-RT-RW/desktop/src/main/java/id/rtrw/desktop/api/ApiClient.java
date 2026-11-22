@@ -31,7 +31,10 @@ public final class ApiClient {
     private HttpClient http;
     private String baseUrl;
     private String token;
+<<<<<<< HEAD
     private boolean authenticated;
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     private Map<String, Object> user = Collections.emptyMap();
 
     public ApiClient(AppConfig config) {
@@ -67,17 +70,22 @@ public final class ApiClient {
 
     // ------------------------------------------------------------------ sesi
 
+<<<<<<< HEAD
     /** GET /api/v1/health. */
     public Object health() throws ApiException {
         return get("/api/v1/health");
     }
 
     /** POST /api/v1/auth/login. Gagal bila kredensial salah atau server tidak terjangkau. */
+=======
+    /** POST /api/login. Gagal bila kredensial salah atau server tidak terjangkau. */
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     public void login(String identifier, String password) throws ApiException {
         logout();
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(config.loginField(), identifier);
         body.put("password", password);
+<<<<<<< HEAD
         Object response = send("POST", "/api/v1/auth/login", body);
         this.token = ApiData.findString(response, "token", "access_token", "jwt");
         this.user = ApiData.findMap(response, "user", "pengguna", "profile");
@@ -90,16 +98,25 @@ public final class ApiClient {
             send("POST", "/api/v1/auth/logout", new LinkedHashMap<>());
         }
         logout();
+=======
+        Object response = send("POST", "/api/login", body);
+        this.token = ApiData.findString(response, "token", "access_token", "jwt");
+        this.user = ApiData.findMap(response, "user", "pengguna", "profile");
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     }
 
     /** Menghapus token, data pengguna, dan cookie sesi dari memori. */
     public void logout() {
         this.token = null;
+<<<<<<< HEAD
         this.authenticated = false;
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
         this.user = Collections.emptyMap();
         this.http = newHttpClient();
     }
 
+<<<<<<< HEAD
     /** GET /api/v1/auth/me. */
     public Object currentUser() throws ApiException {
         Object response = get("/api/v1/auth/me");
@@ -125,6 +142,8 @@ public final class ApiClient {
         return get("/api/v1/notifications?limit=50");
     }
 
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     public String userName() {
         Object v = ApiData.firstValue(user, "nama", "nama_lengkap", "name", "email", "username");
         return v == null ? "Pengguna" : v.toString();

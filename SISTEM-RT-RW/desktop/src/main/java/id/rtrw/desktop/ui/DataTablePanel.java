@@ -62,6 +62,7 @@ import java.util.regex.Pattern;
 class DataTablePanel extends JPanel implements Refreshable {
     private static final long serialVersionUID = 1L;
 
+<<<<<<< HEAD
     interface ApiRequest {
         Object execute() throws ApiException;
     }
@@ -76,6 +77,8 @@ class DataTablePanel extends JPanel implements Refreshable {
         }
     }
 
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     private static final String[] HIDDEN_KEY_PARTS = {"password", "kata_sandi", "token", "hash", "secret"};
     private static final Map<String, String> ACRONYMS = new HashMap<>();
 
@@ -87,7 +90,11 @@ class DataTablePanel extends JPanel implements Refreshable {
 
     protected final ApiClient api;
     private final String title;
+<<<<<<< HEAD
     private final ApiRequest request;
+=======
+    private final String endpoint;
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     private final SessionListener listener;
 
     private final DefaultTableModel model = new DefaultTableModel() {
@@ -117,6 +124,7 @@ class DataTablePanel extends JPanel implements Refreshable {
     private boolean loading;
 
     DataTablePanel(ApiClient api, String title, String subtitle, String endpoint, SessionListener listener) {
+<<<<<<< HEAD
         this(api, title, subtitle, () -> api.get(endpoint), listener);
     }
 
@@ -124,6 +132,11 @@ class DataTablePanel extends JPanel implements Refreshable {
         this.api = api;
         this.title = title;
         this.request = request;
+=======
+        this.api = api;
+        this.title = title;
+        this.endpoint = endpoint;
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
         this.listener = listener;
 
         setLayout(new BorderLayout(0, 12));
@@ -241,11 +254,18 @@ class DataTablePanel extends JPanel implements Refreshable {
         reloadButton.setEnabled(false);
         setStatus("Memuat data...", false);
 
+<<<<<<< HEAD
         new SwingWorker<TableData, Void>() {
             @Override
             protected TableData doInBackground() throws Exception {
                 Object response = request.execute();
                 return new TableData(ApiData.rows(response), ApiData.findInteger(response, "unreadCount"));
+=======
+        new SwingWorker<List<Map<String, Object>>, Void>() {
+            @Override
+            protected List<Map<String, Object>> doInBackground() throws Exception {
+                return ApiData.rows(api.get(endpoint));
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
             }
 
             @Override
@@ -253,6 +273,7 @@ class DataTablePanel extends JPanel implements Refreshable {
                 loading = false;
                 reloadButton.setEnabled(true);
                 try {
+<<<<<<< HEAD
                     TableData result = get();
                     setRows(result.rows);
                     String count = rows.size() + " data";
@@ -260,6 +281,10 @@ class DataTablePanel extends JPanel implements Refreshable {
                         count += "  |  " + result.unreadCount + " belum dibaca";
                     }
                     setStatus(count + "  |  diperbarui "
+=======
+                    setRows(get());
+                    setStatus(rows.size() + " data  |  diperbarui "
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                             + new SimpleDateFormat("HH:mm:ss").format(new Date()), false);
                 } catch (ExecutionException ex) {
                     setRows(new ArrayList<Map<String, Object>>());

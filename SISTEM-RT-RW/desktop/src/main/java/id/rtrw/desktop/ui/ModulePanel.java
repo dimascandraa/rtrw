@@ -208,11 +208,19 @@ final class ModulePanel extends JPanel {
                         "kas, tagihan, pembayaran, warga", "dashboard-stats"),
                 feature("Laporan PDF/Excel",
                         "Ekspor laporan kas, iuran, tunggakan, dan rekap pembayaran.",
+<<<<<<< HEAD
                         "kas, tagihan, pembayaran", null)));
         items.add(module("residents", "Manajemen Data Warga", "M", "Data warga, keluarga, dan mutasi.",
                 feature("Data warga & kepala keluarga",
                         "Kelola profil warga, anggota keluarga, dan kepala keluarga per wilayah.",
                         "warga, keluarga", null),
+=======
+                        "kas, tagihan, pembayaran", "report-list")));
+        items.add(module("residents", "Manajemen Data Warga", "M", "Data warga, keluarga, dan mutasi.",
+                feature("Data warga & kepala keluarga",
+                        "Kelola profil warga, anggota keluarga, dan kepala keluarga per wilayah.",
+                        "warga, keluarga", "resident-list"),
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                 feature("Mutasi dan riwayat warga",
                         "Catat warga pindah masuk, pindah keluar, kelahiran, dan perubahan status.",
                         "mutasi_warga, warga", null)));
@@ -222,6 +230,7 @@ final class ModulePanel extends JPanel {
                         "kategori_iuran, aturan_iuran", null),
                 feature("Tagihan otomatis",
                         "Lihat tagihan per keluarga, periode, jumlah, dan status pembayarannya.",
+<<<<<<< HEAD
                         "periode_tagihan, tagihan", null),
                 feature("Pembayaran QRIS/transfer/tunai",
                         "Telusuri pembayaran warga melalui QRIS, transfer, atau tunai.",
@@ -229,6 +238,15 @@ final class ModulePanel extends JPanel {
                 feature("Verifikasi bukti pembayaran",
                         "Periksa bukti transfer dan tindak lanjuti pembayaran yang menunggu verifikasi.",
                         "pembayaran, bukti_pembayaran", null),
+=======
+                        "periode_tagihan, tagihan", "invoice-list"),
+                feature("Pembayaran QRIS/transfer/tunai",
+                        "Telusuri pembayaran warga melalui QRIS, transfer, atau tunai.",
+                        "pembayaran, tagihan", "payment-list"),
+                feature("Verifikasi bukti pembayaran",
+                        "Periksa bukti transfer dan tindak lanjuti pembayaran yang menunggu verifikasi.",
+                        "pembayaran, bukti_pembayaran", "payment-verification"),
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                 feature("Riwayat pembayaran & kuitansi",
                         "Telusuri pembayaran terverifikasi dan kuitansi digital.",
                         "pembayaran, kuitansi", null),
@@ -255,7 +273,11 @@ final class ModulePanel extends JPanel {
                         "pengumuman, target_pengumuman", "announcement-list"),
                 feature("Notifikasi aplikasi",
                         "Pantau pemberitahuan tagihan, pembayaran, dan informasi lingkungan.",
+<<<<<<< HEAD
                         "notifikasi, log_notifikasi", "notification-list")));
+=======
+                        "notifikasi, log_notifikasi", null)));
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
         items.add(module("activities", "Sosial & Kegiatan", "S", "Agenda kerja bakti dan kegiatan sosial.",
                 feature("Jadwal kegiatan/kerja bakti",
                         "Bagikan agenda warga dan catat konfirmasi kehadiran kegiatan.",

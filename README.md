@@ -17,6 +17,10 @@ Desktop (Java Swing) ────────┘
 - Database: MySQL
 - Komunikasi: REST API dengan JSON
 
+<<<<<<< HEAD
+=======
+**Ketentuan:** Tidak menggunakan framework. Library diperbolehkan sesuai persetujuan tim dan dosen.
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
 
 ## 2. Struktur Repository
 

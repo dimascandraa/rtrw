@@ -66,9 +66,12 @@ public final class TestRunner {
                 ApiData.rows(Json.parse("{\"data\":{\"items\":[{\"id\":1},{\"id\":2},{\"id\":3}],\"total\":3}}")).size() == 3);
         check("rows: objek tunggal menjadi satu baris", ApiData.rows(Json.parse("{\"data\":{\"id\":9,\"nama\":\"x\"}}")).size() == 1);
         check("rows: data kosong", ApiData.rows(Json.parse("{\"data\":[]}")).isEmpty());
+<<<<<<< HEAD
         check("unreadCount: nilai numerik di dalam data",
                 Integer.valueOf(2).equals(ApiData.findInteger(
                         Json.parse("{\"data\":{\"items\":[],\"unreadCount\":2}}"), "unreadCount")));
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
         check("display: angka bulat tanpa .0", ApiData.display(Double.valueOf(50000)).equals("50000"));
         check("isFailure", ApiData.isFailure(Json.parse("{\"success\":false,\"message\":\"x\"}")));
 
@@ -83,6 +86,7 @@ public final class TestRunner {
             String url = "http://127.0.0.1:" + server.getAddress().getPort();
             ApiClient api = new ApiClient(AppConfig.inMemory(url));
 
+<<<<<<< HEAD
             Object health = api.health();
             check("GET /api/v1/health membaca status backend",
                     "ok".equals(ApiData.findMap(health, "data").get("status")));
@@ -92,6 +96,13 @@ public final class TestRunner {
                 check("GET /api/v1/auth/me tanpa login ditolak 401", false);
             } catch (ApiException e) {
                 check("GET /api/v1/auth/me tanpa login ditolak 401", e.isUnauthorized());
+=======
+            try {
+                api.get("/api/residents");
+                check("tanpa login ditolak 401", false);
+            } catch (ApiException e) {
+                check("tanpa login ditolak 401", e.isUnauthorized());
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
             }
 
             try {
@@ -106,6 +117,7 @@ public final class TestRunner {
             check("login berhasil: nama dan peran terbaca", api.userName().contains("Sari")
                     && api.userRole().equals("Bendahara"));
 
+<<<<<<< HEAD
             Object currentUser = api.currentUser();
             check("GET /api/v1/auth/me membaca profil sesi",
                     ApiData.findMap(currentUser, "user").get("name").equals("Bu Sari (Bendahara)"));
@@ -126,6 +138,8 @@ public final class TestRunner {
                     ApiData.rows(notificationResponse).size() == 2
                             && Long.valueOf(1).equals(notificationData.get("unreadCount")));
 
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
             List<Map<String, Object>> residents = ApiData.rows(api.get("/api/residents"));
             check("GET /api/residents mengembalikan data", residents.size() >= 5);
 
@@ -164,12 +178,21 @@ public final class TestRunner {
                 check("404 dilaporkan jelas", e.statusCode() == 404);
             }
 
+<<<<<<< HEAD
             api.logoutServer();
             try {
                 api.currentUser();
                 check("setelah logout endpoint auth/me menolak sesi", false);
             } catch (ApiException e) {
                 check("setelah logout endpoint auth/me menolak sesi", e.isUnauthorized());
+=======
+            api.logout();
+            try {
+                api.get("/api/residents");
+                check("setelah logout token terhapus", false);
+            } catch (ApiException e) {
+                check("setelah logout token terhapus", e.isUnauthorized());
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
             }
         } finally {
             server.stop(0);

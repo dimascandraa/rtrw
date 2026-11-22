@@ -29,7 +29,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
+<<<<<<< HEAD
 /** Halaman login: email/telepon dan kata sandi, ke POST /api/v1/auth/login. */
+=======
+/** Halaman login: email/telepon dan kata sandi, ke POST /api/login. */
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
 public final class LoginFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
@@ -174,7 +178,10 @@ public final class LoginFrame extends JFrame {
             @Override
             protected Void doInBackground() throws Exception {
                 api.login(identifier, password);
+<<<<<<< HEAD
                 api.currentUser();
+=======
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                 return null;
             }
 
@@ -194,11 +201,15 @@ public final class LoginFrame extends JFrame {
                 }
                 if (config.isRoleBlocked(api.userRole())) {
                     String role = api.userRole();
+<<<<<<< HEAD
                     try {
                         api.logoutServer();
                     } catch (ApiException ex) {
                         api.logout();
                     }
+=======
+                    api.logout();
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                     showMessage("Peran \"" + role + "\" memakai aplikasi Mobile. "
                             + "Aplikasi desktop khusus pengurus RT/RW.", true);
                     return;

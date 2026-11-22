@@ -117,22 +117,53 @@ Jika masih gagal, kirimkan **pesan error lengkap dari terminal** dan sebutkan pe
 
 | Menu | Endpoint | Fungsi | Fitur di Daftar Fitur |
 |---|---|---|---|
+<<<<<<< HEAD
 | Koneksi | `GET /api/v1/health` | Memeriksa konektivitas API dan database | (internal) |
 | Login dan sesi | `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout` | Masuk, memuat profil sesi, dan keluar; cookie sesi disimpan otomatis | (akses) |
 | Beranda dan navigasi modul | - | Beranda menampilkan 11 modul dan 26 kartu fitur sesuai rancangan UI/UX; setiap modul punya halaman katalog sendiri | Navigasi UI/UX |
 | Dashboard statistik | `GET /api/v1/dashboard/summary` | Statistik warga dan tagihan dari ringkasan backend | F-015 (versi ringkas) |
 | Pengumuman | `GET /api/v1/announcements?limit=50` | Daftar pengumuman sesuai wilayah dan hak akses pengguna | F-017 |
 | Notifikasi | `GET /api/v1/notifications?limit=50` | Daftar notifikasi pengguna dan jumlah yang belum dibaca | Komunikasi |
+=======
+| Login | `POST /api/login` | Masuk, token dan cookie sesi dibaca otomatis | (akses) |
+| Beranda dan navigasi modul | - | Beranda menampilkan 11 modul dan 26 kartu fitur sesuai rancangan UI/UX; setiap modul punya halaman katalog sendiri | Navigasi UI/UX |
+| Dashboard statistik | `GET /api/residents`, `GET /api/invoices` | Jumlah warga, tagihan lunas/belum, persentase pelunasan | F-015 (versi ringkas) |
+| Data warga | `GET`, `POST /api/residents` | Daftar, cari, tambah warga | F-004 |
+| Tagihan | `GET /api/invoices` | Daftar tagihan dan status | F-009 |
+| Pembayaran | `GET /api/payments`, `POST /api/payments/verify` | Daftar dan verifikasi (terima/tolak) oleh bendahara | F-010, F-011 |
+| Pengumuman | `GET /api/announcements` | Daftar pengumuman | F-017 |
+| Laporan | `GET /api/reports` | Daftar laporan | F-016 |
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
 | Semua tabel | - | Cari, urutkan kolom, **Ekspor CSV** (terbaca di Excel), **Cetak**, detail baris (klik dua kali) | F-016 |
 | Tema | - | Mode terang/gelap, pilihan diingat | F-027 |
 
 Status berwarna mengikuti desain UI/UX: hijau (selesai), kuning (menunggu), merah (ditolak/menunggak). Sesi yang berakhir (HTTP 401) otomatis kembali ke halaman login.
 
+<<<<<<< HEAD
 Menu dan kartu katalog tersedia untuk semua 11 modul pada rancangan UI/UX. Halaman operasional yang belum memiliki endpoint backend menampilkan pemberitahuan bahwa fitur menunggu integrasi; data tiruan tidak ditampilkan. Backend saat ini belum menyediakan endpoint desktop untuk CRUD warga, tagihan, pembayaran/verifikasi, laporan, mutasi warga, surat, kas, kategori iuran, audit log, sesi/perangkat, multi-RT/RW, backup, kegiatan, pengaduan, kontak darurat, dan survei. Ekspor PDF dan XLSX asli membutuhkan library, jadi sementara memakai CSV dan cetak.
 
 ## Kontrak API desktop
 
 Desktop memakai prefix `/api/v1`, format respons backend `{ "data": ... }` atau `{ "error": { "code": "...", "message": "..." } }`, dan cookie sesi `HttpOnly` dari backend. Endpoint dashboard, pengumuman, dan notifikasi memerlukan sesi aktif. Daftar pada respons `data.items` ditampilkan di tabel; metadata `unreadCount` ditampilkan sebagai jumlah belum dibaca. Daftar endpoint lengkap dan aturan login ada di `backend/README.md`.
+=======
+Menu dan kartu katalog tersedia untuk semua 11 modul pada rancangan UI/UX. Halaman operasional yang belum memiliki endpoint desktop menampilkan pemberitahuan bahwa fitur menunggu integrasi; data tiruan tidak ditampilkan. Fitur tersebut meliputi mutasi warga, surat, kas, kategori iuran, audit log, sesi/perangkat, multi-RT/RW, backup, notifikasi, kegiatan, pengaduan, kontak darurat, dan survei. Ekspor PDF dan XLSX asli membutuhkan library, jadi sementara memakai CSV dan cetak. Ini perlu persetujuan tim dan dosen bila ingin ditambah.
+
+## Asumsi kontrak API (WAJIB dicocokkan dengan Dimas)
+
+`documentation/API/` belum saya lihat, jadi bagian berikut adalah **asumsi**. Semuanya terpusat sehingga mudah diubah.
+
+| Asumsi | Lokasi perubahan |
+|---|---|
+| Respons berbentuk `{"success":true,"message":"...","data":[...]}`. Daftar boleh di akar, di `data`, atau di `data.items`. Kegagalan: `{"success":false,"message":"..."}` atau HTTP 4xx/5xx | `api/ApiData.java` |
+| Login: body `{"email": "...", "password": "..."}` (nama kolom di `api.login.field`). Respons memuat `token` dan `user` (di akar atau di `data`) | `ApiClient.login`, `config.properties` |
+| Token dikirim sebagai `Authorization: Bearer <token>`. Cookie sesi PHP juga disimpan otomatis | `api/ApiClient.java` |
+| Peran dibaca dari `user.peran` / `role` / `nama_peran`; peran `warga` ditolak | `ApiClient.userRole`, `desktop.blocked.roles` |
+| `GET /api/payments` ada (daftar pembayaran); `GET /api/announcements` dan `GET /api/reports` mengembalikan daftar | `ui/MainFrame.java` |
+| Verifikasi: `POST /api/payments/verify` body `{"id":..., "status":"diterima"\|"ditolak", "catatan":"..."}` | `ui/PaymentsPanel.java` |
+| Tambah warga: body `{nik, nama, no_kk, alamat, telepon}` | `FORM_FIELDS` di `ui/ResidentsPanel.java` |
+| Status tagihan lunas = kolom berisi kata "status" yang memuat "lunas" tanpa "belum" | `DashboardPanel.isPaid` |
+| Kolom tabel dibuat otomatis dari kunci JSON; kunci berisi `password`, `token`, `hash`, `secret` disembunyikan | `DataTablePanel` |
+>>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
 
 ## Struktur
 

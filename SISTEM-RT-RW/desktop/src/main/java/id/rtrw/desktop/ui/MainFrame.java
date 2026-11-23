@@ -17,9 +17,9 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridLayout;
 import java.awt.RenderingHints;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
@@ -90,6 +90,7 @@ public final class MainFrame extends JFrame implements SessionListener {
         setMinimumSize(new Dimension(960, 600));
         setSize(1200, 760);
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         setLayout(new BorderLayout());
         add(buildSidebar(), BorderLayout.WEST);
@@ -104,19 +105,27 @@ public final class MainFrame extends JFrame implements SessionListener {
     private JPanel buildSidebar() {
         JPanel side = new JPanel(new BorderLayout());
         side.setBackground(Theme.sidebar());
-        side.setPreferredSize(new Dimension(230, 0));
-        JPanel branding = new JPanel();
+        side.setPreferredSize(new Dimension(260, 0));
+        JPanel branding = new JPanel(new BorderLayout(10, 0));
         branding.setOpaque(false);
-        branding.setLayout(new BoxLayout(branding, BoxLayout.Y_AXIS));
-        branding.setBorder(new EmptyBorder(22, 14, 16, 14));
+        branding.setBorder(new EmptyBorder(18, 16, 16, 14));
 
-        JLabel logo = UiKit.label("RT/RW", 26f, true, Theme.accent());
-        logo.setAlignmentX(LEFT_ALIGNMENT);
-        JLabel sub = UiKit.label("Desktop RT/RW", 12f, false, Theme.sidebarText());
-        sub.setAlignmentX(LEFT_ALIGNMENT);
-        branding.add(logo);
-        branding.add(sub);
-        branding.add(Box.createVerticalStrut(12));
+        JPanel identity = new JPanel(new BorderLayout(10, 0));
+        identity.setOpaque(false);
+        JLabel logo = new BadgeLabel("RW", Theme.accent(), Theme.brand(), 40);
+        identity.add(logo, BorderLayout.WEST);
+        JPanel brandText = new JPanel();
+        brandText.setOpaque(false);
+        brandText.setLayout(new BoxLayout(brandText, BoxLayout.Y_AXIS));
+        brandText.add(UiKit.label("Sistem RT/RW", 15f, true, Theme.sidebarText()));
+        brandText.add(UiKit.label("DESKTOP", 10f, true, Theme.accent()));
+        identity.add(brandText, BorderLayout.CENTER);
+        branding.add(identity, BorderLayout.CENTER);
+
+        FlatButton theme = new FlatButton(Theme.isDark() ? "Terang" : "Gelap", FlatButton.Kind.GHOST);
+        theme.setToolTipText(Theme.isDark() ? "Gunakan tema terang" : "Gunakan tema gelap");
+        theme.addActionListener(e -> toggleTheme());
+        branding.add(theme, BorderLayout.EAST);
         side.add(branding, BorderLayout.NORTH);
 
         JPanel navigation = new JPanel();
@@ -154,35 +163,33 @@ public final class MainFrame extends JFrame implements SessionListener {
         profile.setOpaque(false);
         profile.setLayout(new BoxLayout(profile, BoxLayout.Y_AXIS));
         profile.setBorder(new EmptyBorder(12, 14, 16, 14));
-        JLabel name = UiKit.label(api.userName(), 14f, true, Theme.text());
-        name.setAlignmentX(LEFT_ALIGNMENT);
+        JPanel identityRow = new JPanel(new BorderLayout(10, 0));
+        identityRow.setOpaque(false);
+        String displayName = api.userName().isEmpty() ? "Pengguna" : api.userName();
+        String initial = displayName.substring(0, 1).toUpperCase(java.util.Locale.ROOT);
+        identityRow.add(new BadgeLabel(initial, Theme.accent(), Theme.brand(), 38), BorderLayout.WEST);
+        JPanel userText = new JPanel();
+        userText.setOpaque(false);
+        userText.setLayout(new BoxLayout(userText, BoxLayout.Y_AXIS));
+        userText.add(UiKit.label(displayName, 13f, true, Theme.sidebarText()));
         String roleText = api.userRole().isEmpty() ? "Masuk" : api.userRole();
-        JLabel role = UiKit.label(roleText, 12f, false, Theme.sidebarText());
-        role.setAlignmentX(LEFT_ALIGNMENT);
-        profile.add(name);
-        profile.add(role);
+        userText.add(UiKit.label(roleText, 11f, false, Theme.sidebarText()));
+        identityRow.add(userText, BorderLayout.CENTER);
+        profile.add(identityRow);
         profile.add(Box.createVerticalStrut(12));
 
-        FlatButton accountSettings = new FlatButton("Profil & Keamanan", FlatButton.Kind.NEUTRAL);
-        accountSettings.setAlignmentX(LEFT_ALIGNMENT);
-        accountSettings.setMaximumSize(new Dimension(Integer.MAX_VALUE, accountSettings.getPreferredSize().height));
+        JPanel profileActions = new JPanel(new GridLayout(1, 2, 8, 0));
+        profileActions.setOpaque(false);
+        FlatButton accountSettings = new FlatButton("Profil", FlatButton.Kind.GHOST);
         accountSettings.addActionListener(e -> {
             activeModule = "beranda";
             show("account-settings");
         });
-        FlatButton theme = new FlatButton(Theme.isDark() ? "Mode Terang" : "Mode Gelap", FlatButton.Kind.NEUTRAL);
-        theme.setAlignmentX(LEFT_ALIGNMENT);
-        theme.setMaximumSize(new Dimension(Integer.MAX_VALUE, theme.getPreferredSize().height));
-        theme.addActionListener(e -> toggleTheme());
         FlatButton logout = new FlatButton("Keluar", FlatButton.Kind.NEUTRAL);
-        logout.setAlignmentX(LEFT_ALIGNMENT);
-        logout.setMaximumSize(new Dimension(Integer.MAX_VALUE, logout.getPreferredSize().height));
         logout.addActionListener(e -> logout(null));
-        profile.add(accountSettings);
-        profile.add(Box.createVerticalStrut(8));
-        profile.add(theme);
-        profile.add(Box.createVerticalStrut(8));
-        profile.add(logout);
+        profileActions.add(accountSettings);
+        profileActions.add(logout);
+        profile.add(profileActions);
         side.add(profile, BorderLayout.SOUTH);
         return side;
     }
@@ -390,8 +397,8 @@ public final class MainFrame extends JFrame implements SessionListener {
             this.text = text;
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setPreferredSize(new Dimension(200, 40));
-            setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+            setPreferredSize(new Dimension(220, 46));
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
@@ -420,13 +427,49 @@ public final class MainFrame extends JFrame implements SessionListener {
             Rectangle r = new Rectangle(0, 0, getWidth(), getHeight());
             if (selected || hover) {
                 g2.setColor(selected ? Theme.sidebarSelected() : Theme.sidebarHover());
-                g2.fillRoundRect(r.x, r.y, r.width, r.height, 10, 10);
+                g2.fillRoundRect(r.x, r.y, r.width, r.height, 14, 14);
             }
+            int badgeSize = 30;
+            int badgeX = 9;
+            int badgeY = (r.height - badgeSize) / 2;
+            g2.setColor(selected ? Theme.primary() : Theme.header());
+            g2.fillRoundRect(badgeX, badgeY, badgeSize, badgeSize, 10, 10);
+            g2.setColor(selected ? Theme.primaryText() : Theme.primary());
+            g2.setFont(Theme.font(12f, true));
+            int badgeTextY = badgeY + (badgeSize - g2.getFontMetrics().getHeight()) / 2
+                    + g2.getFontMetrics().getAscent();
+            String mark = text.isEmpty() ? "" : text.substring(0, 1).toUpperCase(java.util.Locale.ROOT);
+            int badgeTextX = badgeX + (badgeSize - g2.getFontMetrics().stringWidth(mark)) / 2;
+            g2.drawString(mark, badgeTextX, badgeTextY);
             g2.setColor(selected ? Theme.text() : Theme.sidebarText());
-            g2.setFont(getFont().deriveFont(selected ? Font.BOLD : Font.PLAIN, 14f));
+            g2.setFont(Theme.font(14f, selected));
             int y = (r.height - g2.getFontMetrics().getHeight()) / 2 + g2.getFontMetrics().getAscent();
-            g2.drawString(text, 18, y);
+            g2.drawString(text, 50, y);
             g2.dispose();
+        }
+    }
+
+    private static final class BadgeLabel extends JLabel {
+        private static final long serialVersionUID = 1L;
+        private final java.awt.Color fill;
+
+        BadgeLabel(String text, java.awt.Color fill, java.awt.Color foreground, int size) {
+            super(text, JLabel.CENTER);
+            this.fill = fill;
+            setForeground(foreground);
+            setFont(Theme.font(13f, true));
+            setOpaque(false);
+            setPreferredSize(new Dimension(size, size));
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(fill);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+            g2.dispose();
+            super.paintComponent(graphics);
         }
     }
 }

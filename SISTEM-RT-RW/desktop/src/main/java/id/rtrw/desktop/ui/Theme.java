@@ -3,6 +3,7 @@ package id.rtrw.desktop.ui;
 import javax.swing.UIManager;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.Color;
+import java.awt.Font;
 import java.util.prefs.Preferences;
 
 /**
@@ -40,7 +41,38 @@ public final class Theme {
         apply();
     }
 
+    public static Font font(float size, boolean bold) {
+        Font font = new Font("Plus Jakarta Sans", bold ? Font.BOLD : Font.PLAIN, Math.round(size));
+        if ("Dialog".equalsIgnoreCase(font.getFamily())) {
+            font = new Font("Segoe UI", bold ? Font.BOLD : Font.PLAIN, Math.round(size));
+        }
+        return font.deriveFont(bold ? Font.BOLD : Font.PLAIN, size);
+    }
+
     private static void apply() {
+        try {
+            UIManager.setLookAndFeel(new NimbusLookAndFeel());
+        } catch (Exception e) {
+            // tetap memakai tampilan bawaan Java
+        }
+        Font regular = font(14f, false);
+        Font bold = font(14f, true);
+        UIManager.put("defaultFont", regular);
+        UIManager.put("Button.font", bold);
+        UIManager.put("ToggleButton.font", bold);
+        UIManager.put("CheckBox.font", regular);
+        UIManager.put("ComboBox.font", regular);
+        UIManager.put("Label.font", regular);
+        UIManager.put("Menu.font", regular);
+        UIManager.put("MenuItem.font", regular);
+        UIManager.put("OptionPane.buttonFont", bold);
+        UIManager.put("OptionPane.messageFont", regular);
+        UIManager.put("Panel.font", regular);
+        UIManager.put("PasswordField.font", regular);
+        UIManager.put("Table.font", regular);
+        UIManager.put("TableHeader.font", bold);
+        UIManager.put("TextArea.font", regular);
+        UIManager.put("TextField.font", regular);
         UIManager.put("control", bg());
         UIManager.put("info", surface());
         UIManager.put("nimbusBase", primary());
@@ -53,11 +85,6 @@ public final class Theme {
         UIManager.put("nimbusDisabledText", muted());
         UIManager.put("text", text());
         UIManager.put("Table.alternateRowColor", stripe());
-        try {
-            UIManager.setLookAndFeel(new NimbusLookAndFeel());
-        } catch (Exception e) {
-            // tetap memakai tampilan bawaan Java
-        }
     }
 
     private static Color rgb(int value) {

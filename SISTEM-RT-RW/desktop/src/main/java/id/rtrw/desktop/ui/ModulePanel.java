@@ -13,11 +13,14 @@ import javax.swing.Scrollable;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.Rectangle;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -202,7 +205,7 @@ final class ModulePanel extends JPanel {
     }
 
     private JScrollPane buildCards(ModuleInfo module, BiConsumer<String, String> openFeature) {
-        JPanel grid = new CardGrid();
+        JPanel grid = new CardGrid(module == null ? 5 : 4);
         if (module == null) {
             for (ModuleInfo item : MODULES) {
                 if (hasAccessibleFeature(api, item.id)) {
@@ -213,8 +216,8 @@ final class ModulePanel extends JPanel {
                         }
                     }
                     grid.add(card(item.shortName, item.title, item.description,
-                            available + " fitur tersedia",
-                            "Buka modul", () -> openFeature.accept(item.id, null)));
+                            available + " fitur tersedia", null,
+                            () -> openFeature.accept(item.id, null)));
                 }
             }
         } else {
@@ -251,12 +254,12 @@ final class ModulePanel extends JPanel {
             String action, Runnable onClick) {
         JPanel panel = UiKit.card();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setPreferredSize(new Dimension(230, 190));
+        panel.setPreferredSize(new Dimension(260, 210));
 
         JPanel iconBox = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         iconBox.setOpaque(false);
         JLabel badge = new JLabel(mark, JLabel.CENTER);
-        badge.setFont(badge.getFont().deriveFont(Font.BOLD, 14f));
+        badge.setFont(Theme.font(14f, true));
         badge.setForeground(Theme.primary());
         badge.setOpaque(true);
         badge.setBackground(Theme.header());
@@ -281,19 +284,41 @@ final class ModulePanel extends JPanel {
         panel.add(footer);
         panel.add(Box.createVerticalGlue());
 
-        JButton button = new FlatButton(action, FlatButton.Kind.NEUTRAL);
-        button.setAlignmentX(LEFT_ALIGNMENT);
-        button.addActionListener(e -> onClick.run());
-        panel.add(button);
+        if (action == null) {
+            bindClick(panel, onClick);
+        } else {
+            JButton button = new FlatButton(action, FlatButton.Kind.NEUTRAL);
+            button.setAlignmentX(LEFT_ALIGNMENT);
+            button.addActionListener(e -> onClick.run());
+            panel.add(button);
+        }
         return panel;
     }
 
     private static final class CardGrid extends JPanel implements Scrollable {
         private static final long serialVersionUID = 1L;
+        private static final int GAP = 16;
+        private static final int MIN_CARD_WIDTH = 250;
+        private final GridLayout gridLayout;
+        private final int maximumColumns;
 
-        CardGrid() {
-            super(new GridLayout(0, 3, 14, 14));
+        CardGrid(int maximumColumns) {
+            this(new GridLayout(0, 1, GAP, GAP), maximumColumns);
+        }
+
+        private CardGrid(GridLayout layout, int maximumColumns) {
+            super(layout);
+            this.gridLayout = layout;
+            this.maximumColumns = maximumColumns;
             setOpaque(false);
+        }
+
+        @Override
+        public void doLayout() {
+            int columns = Math.max(1, Math.min(maximumColumns,
+                    (getWidth() + GAP) / (MIN_CARD_WIDTH + GAP)));
+            gridLayout.setColumns(columns);
+            super.doLayout();
         }
 
         @Override
@@ -319,6 +344,21 @@ final class ModulePanel extends JPanel {
         @Override
         public boolean getScrollableTracksViewportHeight() {
             return false;
+        }
+    }
+
+    private static void bindClick(Component component, Runnable onClick) {
+        component.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        component.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                onClick.run();
+            }
+        });
+        if (component instanceof Container) {
+            for (Component child : ((Container) component).getComponents()) {
+                bindClick(child, onClick);
+            }
         }
     }
 

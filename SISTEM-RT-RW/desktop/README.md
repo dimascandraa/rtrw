@@ -50,7 +50,7 @@ Cara ini menjalankan aplikasi beserta API tiruan berisi data contoh. Tidak perlu
    .\run.bat
    ```
 
-   Tunggu sampai `build.bat` menampilkan `Selesai: out\rtrw-desktop.jar`.    Saat jendela login terbuka, akun demo tersedia:
+   Tunggu sampai `build.bat` menampilkan `Selesai: out\rtrw-desktop.jar`. Saat jendela login terbuka, alamat API tiruan sudah terisi. Jika perlu mengubahnya, pilih **Ubah alamat server** di bawah formulir. Akun demo tersedia:
 
    - **Alamat server:** `http://127.0.0.1:8000`
    - **Admin RW:** `admin@rtrw.test` / `admin123`
@@ -87,7 +87,7 @@ Jalankan backend sesuai dokumentasinya, lalu buka aplikasi dari folder `desktop`
 .\run.bat --url=http://localhost:8000
 ```
 
-Ganti URL dengan alamat backend yang benar. Alternatifnya, buka aplikasi tanpa argumen dan isi URL tersebut pada kolom **Alamat server** di halaman login. URL yang digunakan akan disimpan untuk pemakaian berikutnya. Untuk server produksi, gunakan HTTPS.
+Ganti URL dengan alamat backend yang benar. Alternatifnya, buka aplikasi tanpa argumen, pilih **Ubah alamat server** di halaman login, lalu isi URL tersebut. URL yang digunakan akan disimpan untuk pemakaian berikutnya. Untuk server produksi, gunakan HTTPS.
 
 ### Mengatasi masalah saat menjalankan
 
@@ -126,7 +126,7 @@ Jika masih gagal, kirimkan **pesan error lengkap dari terminal** dan sebutkan pe
 | Data operasional | `GET /api/v1/resources/{resource}` | Membaca daftar resource sesuai peran dan wilayah akun, termasuk warga, tagihan, pembayaran, kegiatan, pengaduan, serta pengaturan | Beragam |
 | Registrasi akun | `POST /api/v1/auth/register` | Formulir publik pada halaman login mengirim pendaftaran akun warga untuk ditinjau pengurus | Akses |
 | Persetujuan pendaftaran | `GET /api/v1/registrations/pending`, `POST /api/v1/registrations/{id}/approve` | Melihat dan menyetujui pendaftaran yang dapat ditinjau akun | Akses |
-| Pengajuan surat online | `GET /api/v1/resources/jenis-surat`, `POST /api/v1/letters` | Warga aktif memilih jenis surat dan mengirim keperluan | Administrasi |
+| Pengajuan surat online | `GET /api/v1/resources/jenis-surat`, `POST /api/v1/letters` | Nama pemohon mengikuti akun warga yang masuk; warga memilih jenis surat aktif dan mengirim keperluan | Administrasi |
 | Persetujuan surat | `GET /api/v1/resources/pengajuan-surat`, `POST /api/v1/letters/{id}/decision` | Meninjau pengajuan dan mengirim keputusan setuju/tolak beserta catatan | Administrasi |
 | Profil dan keamanan | `PATCH /api/v1/auth/profile`, `POST /api/v1/auth/password` | Memperbarui profil sendiri atau mengganti kata sandi dengan verifikasi kata sandi saat ini | Akses |
 | Semua tabel | - | Cari, pagination server, urutkan kolom, **Ekspor CSV** halaman aktif, **Cetak**, detail baris (klik dua kali) | F-016 |

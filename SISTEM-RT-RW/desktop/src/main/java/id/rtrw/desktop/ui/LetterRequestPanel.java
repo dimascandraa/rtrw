@@ -11,9 +11,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
-import java.awt.GridLayout;
+import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +41,7 @@ final class LetterRequestPanel extends JPanel implements Refreshable {
 
     private final ApiClient api;
     private final SessionListener listener;
+    private final JTextField applicantName = new JTextField();
     private final JComboBox<LetterType> type = new JComboBox<>();
     private final JTextArea purpose = new JTextArea(5, 36);
     private final JLabel status = UiKit.label("Memuat jenis surat...", 12f, false, Theme.muted());
@@ -59,30 +61,66 @@ final class LetterRequestPanel extends JPanel implements Refreshable {
                 13f, false, Theme.muted()));
         add(Box.createVerticalStrut(20));
 
-        JPanel form = new JPanel(new GridLayout(0, 1, 8, 8));
+        JPanel form = UiKit.card();
         form.setOpaque(false);
-        form.add(UiKit.label("Jenis surat", 12f, true, Theme.text()));
-        type.setFont(type.getFont().deriveFont(14f));
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        form.setAlignmentX(LEFT_ALIGNMENT);
+        form.setMaximumSize(new Dimension(Integer.MAX_VALUE, 520));
+
+        form.add(UiKit.label("Nama pemohon", 13f, true, Theme.text()));
+        form.add(Box.createVerticalStrut(6));
+        applicantName.setText(api.userName());
+        applicantName.setEditable(false);
+        applicantName.setToolTipText("Nama diambil dari akun warga yang sedang masuk.");
+        UiKit.styleField(applicantName);
+        applicantName.setFont(Theme.font(14f, false));
+        form.add(left(applicantName));
+        form.add(Box.createVerticalStrut(4));
+        form.add(UiKit.label("Nama mengikuti akun warga yang sedang masuk.", 11f, false, Theme.muted()));
+        form.add(Box.createVerticalStrut(18));
+
+        form.add(UiKit.label("Surat yang dipilih", 13f, true, Theme.text()));
+        form.add(Box.createVerticalStrut(6));
+        type.setFont(Theme.font(14f, false));
         type.setForeground(Theme.text());
         type.setBackground(Theme.surface());
+        type.setPreferredSize(new Dimension(320, 42));
+        type.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        type.setEnabled(false);
         form.add(type);
-        form.add(UiKit.label("Keperluan (maksimal 255 karakter)", 12f, true, Theme.text()));
+        form.add(Box.createVerticalStrut(18));
+        form.add(UiKit.label("Keperluan (maksimal 255 karakter)", 13f, true, Theme.text()));
+        form.add(Box.createVerticalStrut(6));
+        purpose.setFont(Theme.font(14f, false));
         purpose.setLineWrap(true);
         purpose.setWrapStyleWord(true);
         UiKit.styleField(purpose);
-        form.add(new JScrollPane(purpose));
-        form.setAlignmentX(LEFT_ALIGNMENT);
-        form.setMaximumSize(new java.awt.Dimension(560, 260));
-        add(form);
-        add(Box.createVerticalStrut(12));
+        JScrollPane purposeScroll = new JScrollPane(purpose);
+        purposeScroll.setPreferredSize(new Dimension(560, 130));
+        purposeScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        purposeScroll.setBorder(javax.swing.BorderFactory.createLineBorder(Theme.border(), 1, true));
+        form.add(purposeScroll);
+        form.add(Box.createVerticalStrut(14));
 
         status.setAlignmentX(LEFT_ALIGNMENT);
-        add(status);
-        add(Box.createVerticalStrut(8));
+        form.add(status);
+        form.add(Box.createVerticalStrut(8));
         submit.setAlignmentX(LEFT_ALIGNMENT);
+        submit.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         submit.setEnabled(false);
         submit.addActionListener(e -> submitRequest());
-        add(submit);
+        form.add(submit);
+        add(form);
+    }
+
+    private static <T extends javax.swing.JComponent> T left(T component) {
+        component.setAlignmentX(LEFT_ALIGNMENT);
+        if (component instanceof JTextField) {
+            Dimension preferred = component.getPreferredSize();
+            component.setPreferredSize(new Dimension(preferred.width, 42));
+            component.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        }
+        return component;
     }
 
     @Override
@@ -92,6 +130,7 @@ final class LetterRequestPanel extends JPanel implements Refreshable {
         }
         loading = true;
         submit.setEnabled(false);
+        type.setEnabled(false);
         setStatus("Memuat jenis surat...", false);
 
         new SwingWorker<List<LetterType>, Void>() {
@@ -99,10 +138,11 @@ final class LetterRequestPanel extends JPanel implements Refreshable {
             protected List<LetterType> doInBackground() throws Exception {
                 List<LetterType> items = new ArrayList<>();
                 for (Map<String, Object> row : ApiData.rows(api.resource("jenis-surat"))) {
-                    Object id = ApiData.firstValue(row, "id");
-                    Object name = ApiData.firstValue(row, "nama", "nama_jenis_surat", "name", "judul");
-                    if (id instanceof Number && name != null) {
-                        items.add(new LetterType(((Number) id).longValue(), name.toString()));
+                    Long id = positiveId(ApiData.firstValue(row, "id", "jenisSuratId", "jenis_surat_id"));
+                    Object name = ApiData.firstValue(row, "nama", "nama_jenis_surat", "jenis_surat",
+                            "name", "judul", "label");
+                    if (id != null && name != null && !name.toString().trim().isEmpty()) {
+                        items.add(new LetterType(id, name.toString().trim()));
                     }
                 }
                 return items;
@@ -114,9 +154,11 @@ final class LetterRequestPanel extends JPanel implements Refreshable {
                 try {
                     List<LetterType> items = get();
                     type.removeAllItems();
+                    type.addItem(new LetterType(0, "Pilih jenis surat..."));
                     for (LetterType item : items) {
                         type.addItem(item);
                     }
+                    type.setEnabled(!items.isEmpty());
                     submit.setEnabled(!items.isEmpty());
                     setStatus(items.isEmpty() ? "Belum ada jenis surat aktif di wilayah Anda." : " ",
                             items.isEmpty());
@@ -135,7 +177,7 @@ final class LetterRequestPanel extends JPanel implements Refreshable {
     private void submitRequest() {
         LetterType selected = (LetterType) type.getSelectedItem();
         String text = purpose.getText().trim();
-        if (selected == null || text.isEmpty() || text.length() > 255) {
+        if (selected == null || selected.id < 1 || text.isEmpty() || text.length() > 255) {
             setStatus("Pilih jenis surat dan isi keperluan (maksimal 255 karakter).", true);
             return;
         }
@@ -187,5 +229,21 @@ final class LetterRequestPanel extends JPanel implements Refreshable {
 
     private static String escape(String text) {
         return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    private static Long positiveId(Object value) {
+        if (value instanceof Number) {
+            long id = ((Number) value).longValue();
+            return id > 0 ? id : null;
+        }
+        if (value instanceof String) {
+            try {
+                long id = Long.parseLong((String) value);
+                return id > 0 ? id : null;
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 }

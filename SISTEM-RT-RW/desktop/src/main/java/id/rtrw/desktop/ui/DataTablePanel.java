@@ -116,7 +116,7 @@ class DataTablePanel extends JPanel implements Refreshable {
         }
     };
     private final TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
-    private final JTextField search = new JTextField(20);
+    private final JTextField search = new JTextField(28);
     private final JLabel statusLabel = new JLabel(" ");
     private final JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
     private final FlatButton reloadButton = new FlatButton("Muat Ulang", FlatButton.Kind.NEUTRAL);
@@ -236,17 +236,19 @@ class DataTablePanel extends JPanel implements Refreshable {
 
     private JScrollPane buildTable() {
         table.setRowSorter(sorter);
-        table.setRowHeight(32);
+        table.setRowHeight(44);
         table.setShowVerticalLines(false);
         table.setShowHorizontalLines(true);
         table.setGridColor(Theme.border());
         table.setFillsViewportHeight(true);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        table.setFont(table.getFont().deriveFont(13f));
+        table.setFont(Theme.font(13f, false));
+        table.setSelectionBackground(Theme.sidebarSelected());
+        table.setSelectionForeground(Theme.text());
         table.getTableHeader().setReorderingAllowed(false);
-        table.getTableHeader().setFont(table.getFont().deriveFont(Font.BOLD, 13f));
+        table.getTableHeader().setFont(Theme.font(13f, true));
         table.getTableHeader().setDefaultRenderer(new HeaderRenderer());
-        table.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 34));
+        table.getTableHeader().setPreferredSize(new java.awt.Dimension(0, 44));
         table.setDefaultRenderer(Object.class, new CellRenderer());
         table.addMouseListener(new MouseAdapter() {
             @Override
@@ -660,9 +662,9 @@ class DataTablePanel extends JPanel implements Refreshable {
             }
             setText(text);
             setOpaque(true);
-            setBackground(Theme.header());
+            setBackground(Theme.surface());
             setForeground(Theme.text());
-            setFont(t.getFont().deriveFont(Font.BOLD, 13f));
+            setFont(Theme.font(13f, true));
             setHorizontalAlignment(LEFT);
             setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, Theme.border()),
@@ -684,8 +686,8 @@ class DataTablePanel extends JPanel implements Refreshable {
             String key = modelCol < columns.size() ? columns.get(modelCol) : "";
             Font base = t.getFont();
             if (selected) {
-                setBackground(Theme.primary());
-                setForeground(Color.WHITE);
+                setBackground(Theme.sidebarSelected());
+                setForeground(Theme.text());
                 setFont(base);
             } else {
                 setBackground(row % 2 == 0 ? Theme.surface() : Theme.stripe());

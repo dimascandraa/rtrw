@@ -44,6 +44,22 @@ Semua respons JSON menggunakan format `{ "data": ... }` atau `{ "error": { "code
 | `POST` | `/api/v1/registrations/{id}/approve` | Menyetujui akun sebagai Warga dan menghubungkannya ke data warga |
 | `POST` | `/api/v1/letters` | Mengirim pengajuan surat milik warga yang sedang masuk |
 | `POST` | `/api/v1/letters/{id}/decision` | Menyetujui atau menolak pengajuan sesuai wilayah |
+| `POST` | `/api/v1/families` | Membuat data keluarga |
+| `PATCH` | `/api/v1/families/{id}` | Mengubah data keluarga |
+| `DELETE` | `/api/v1/families/{id}` | Mengarsipkan keluarga yang belum memiliki warga/tagihan |
+| `POST` | `/api/v1/residents` | Menambahkan warga ke keluarga |
+| `PATCH` | `/api/v1/residents/{id}` | Mengubah profil warga tanpa mengubah NIK |
+| `DELETE` | `/api/v1/residents/{id}` | Menonaktifkan dan mengarsipkan warga |
+| `POST` | `/api/v1/invoices` | Membuat tagihan beserta rincian kategori |
+| `PATCH` | `/api/v1/invoices/{id}` | Mengubah tagihan tanpa riwayat pembayaran |
+| `DELETE` | `/api/v1/invoices/{id}` | Membatalkan tagihan yang belum memiliki pembayaran |
+| `POST` | `/api/v1/payments/{id}/decision` | Memverifikasi atau menolak pembayaran |
+| `POST` | `/api/v1/announcements` | Membuat draf atau menerbitkan pengumuman |
+| `PATCH` | `/api/v1/announcements/{id}` | Mengubah pengumuman |
+| `DELETE` | `/api/v1/announcements/{id}` | Mengarsipkan pengumuman |
+| `POST` | `/api/v1/activities` | Membuat kegiatan |
+| `PATCH` | `/api/v1/activities/{id}` | Mengubah kegiatan |
+| `DELETE` | `/api/v1/activities/{id}` | Mengarsipkan kegiatan |
 | `GET` | `/api/v1/dashboard/summary` | Statistik warga, keluarga, tagihan, dan kas |
 | `GET` | `/api/v1/announcements?limit=5` | Pengumuman yang terlihat di wilayah pengguna |
 | `GET` | `/api/v1/notifications?limit=5` | Notifikasi milik pengguna dan jumlah yang belum dibaca |
@@ -67,6 +83,6 @@ Endpoint data memeriksa izin pada `peran_izin_akses`/`izin_akses`, membatasi que
 
 Registrasi harus menggunakan nomor telepon yang sama dengan data warga aktif. Pendaftar tidak dapat masuk atau memilih peran sebelum admin, Ketua RW, atau Ketua RT menyetujuinya. Persetujuan hanya mengaktifkan peran Warga dan menghubungkan akun berdasarkan telepon; perubahan peran tidak dapat dilakukan sendiri dari profil. Kata sandi memakai hash `password_hash()`, dan perubahan kata sandi mencabut sesi lain milik pengguna.
 
-Ekspor laporan tersedia pada fitur **Laporan PDF/Excel** di web. File Excel berisi workbook dengan sheet Kas, Tagihan, dan Pembayaran; seluruh halaman data diambil melalui API dengan batas izin dan wilayah. Opsi PDF membuka dialog cetak browser sehingga pengguna dapat memilih **Simpan sebagai PDF**.
+Ekspor laporan PDF/Excel membaca resource kas, tagihan, dan pembayaran melalui API dengan batas izin dan wilayah. API operasi tulis memvalidasi organisasi/wilayah, izin, status transaksi, dan menulis audit log. NIK dan nomor KK tidak dikembalikan pada resource umum; hindari menaruh data tersebut pada log.
 
 Operasi tulis hanya tersedia pada endpoint spesifik yang memvalidasi data, izin, organisasi/wilayah, audit log, dan transaksi bisnis. Jangan menambah operasi tulis generik ke tabel.

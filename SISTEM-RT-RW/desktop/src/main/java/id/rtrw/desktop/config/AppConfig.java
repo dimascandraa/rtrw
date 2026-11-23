@@ -67,21 +67,15 @@ public final class AppConfig {
         }
     }
 
-<<<<<<< HEAD
     /** Nama kolom untuk email/telepon pada body POST /api/v1/auth/login. */
     public String loginField() {
         return props.getProperty("api.login.field", "identity").trim();
-=======
-    /** Nama kolom untuk email/telepon pada body POST /api/login. */
-    public String loginField() {
-        return props.getProperty("api.login.field", "email").trim();
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     }
 
-    /** Peran yang diarahkan ke aplikasi Mobile dan tidak boleh memakai desktop. */
+    /** Peran opsional yang tidak diizinkan menggunakan desktop. */
     public Set<String> blockedRoles() {
         Set<String> roles = new HashSet<>();
-        for (String r : props.getProperty("desktop.blocked.roles", "warga").split(",")) {
+        for (String r : props.getProperty("desktop.blocked.roles", "").split(",")) {
             if (!r.trim().isEmpty()) {
                 roles.add(r.trim().toLowerCase(Locale.ROOT));
             }

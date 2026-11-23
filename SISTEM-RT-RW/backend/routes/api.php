@@ -8,6 +8,8 @@ require_once dirname(__DIR__) . '/controllers/NotificationController.php';
 require_once dirname(__DIR__) . '/controllers/ResourceController.php';
 require_once dirname(__DIR__) . '/controllers/AccountController.php';
 require_once dirname(__DIR__) . '/controllers/LetterController.php';
+require_once dirname(__DIR__) . '/controllers/OperationController.php';
+require_once dirname(__DIR__) . '/controllers/ContentController.php';
 
 function dispatchApi(PDO $connection, array $configuration): void
 {
@@ -55,6 +57,54 @@ function dispatchApi(PDO $connection, array $configuration): void
     if (preg_match('/\Aletters\/([1-9][0-9]*)\/decision\z/', $route, $letterMatch) === 1 && $method === 'POST') {
         decideLetterRequest($connection, authenticatedUser($connection), (int) $letterMatch[1]);
     }
+    if ($route === 'families' && $method === 'POST') {
+        createFamily($connection, authenticatedUser($connection));
+    }
+    if (preg_match('/\Afamilies\/([1-9][0-9]*)\z/', $route, $familyMatch) === 1 && $method === 'PATCH') {
+        updateFamily($connection, authenticatedUser($connection), (int) $familyMatch[1]);
+    }
+    if (preg_match('/\Afamilies\/([1-9][0-9]*)\z/', $route, $familyMatch) === 1 && $method === 'DELETE') {
+        deleteFamily($connection, authenticatedUser($connection), (int) $familyMatch[1]);
+    }
+    if ($route === 'residents' && $method === 'POST') {
+        createResident($connection, authenticatedUser($connection));
+    }
+    if (preg_match('/\Aresidents\/([1-9][0-9]*)\z/', $route, $residentMatch) === 1 && $method === 'PATCH') {
+        updateResident($connection, authenticatedUser($connection), (int) $residentMatch[1]);
+    }
+    if (preg_match('/\Aresidents\/([1-9][0-9]*)\z/', $route, $residentMatch) === 1 && $method === 'DELETE') {
+        deleteResident($connection, authenticatedUser($connection), (int) $residentMatch[1]);
+    }
+    if ($route === 'invoices' && $method === 'POST') {
+        createInvoice($connection, authenticatedUser($connection));
+    }
+    if (preg_match('/\Ainvoices\/([1-9][0-9]*)\z/', $route, $invoiceMatch) === 1 && $method === 'PATCH') {
+        updateInvoice($connection, authenticatedUser($connection), (int) $invoiceMatch[1]);
+    }
+    if (preg_match('/\Ainvoices\/([1-9][0-9]*)\z/', $route, $invoiceMatch) === 1 && $method === 'DELETE') {
+        deleteInvoice($connection, authenticatedUser($connection), (int) $invoiceMatch[1]);
+    }
+    if (preg_match('/\Apayments\/([1-9][0-9]*)\/decision\z/', $route, $paymentMatch) === 1 && $method === 'POST') {
+        decidePayment($connection, authenticatedUser($connection), (int) $paymentMatch[1]);
+    }
+    if ($route === 'announcements' && $method === 'POST') {
+        writeAnnouncement($connection, authenticatedUser($connection));
+    }
+    if (preg_match('/\Aannouncements\/([1-9][0-9]*)\z/', $route, $announcementMatch) === 1 && $method === 'PATCH') {
+        writeAnnouncement($connection, authenticatedUser($connection), (int) $announcementMatch[1]);
+    }
+    if (preg_match('/\Aannouncements\/([1-9][0-9]*)\z/', $route, $announcementMatch) === 1 && $method === 'DELETE') {
+        deleteAnnouncement($connection, authenticatedUser($connection), (int) $announcementMatch[1]);
+    }
+    if ($route === 'activities' && $method === 'POST') {
+        writeActivity($connection, authenticatedUser($connection));
+    }
+    if (preg_match('/\Aactivities\/([1-9][0-9]*)\z/', $route, $activityMatch) === 1 && $method === 'PATCH') {
+        writeActivity($connection, authenticatedUser($connection), (int) $activityMatch[1]);
+    }
+    if (preg_match('/\Aactivities\/([1-9][0-9]*)\z/', $route, $activityMatch) === 1 && $method === 'DELETE') {
+        deleteActivity($connection, authenticatedUser($connection), (int) $activityMatch[1]);
+    }
 
     if ($route === 'dashboard/summary' && $method === 'GET') {
         dashboardSummary($connection, authenticatedUser($connection));
@@ -82,6 +132,10 @@ function dispatchApi(PDO $connection, array $configuration): void
         'dashboard/summary' => ['GET'],
         'announcements' => ['GET'],
         'notifications' => ['GET'],
+        'families' => ['POST'],
+        'residents' => ['POST'],
+        'invoices' => ['POST'],
+        'activities' => ['POST'],
     ];
     if (preg_match('/\Aresources\/[a-z-]+\z/', $route) === 1) {
         $knownRoutes[$route] = ['GET'];
@@ -90,6 +144,12 @@ function dispatchApi(PDO $connection, array $configuration): void
         $knownRoutes[$route] = ['POST'];
     }
     if (preg_match('/\Aletters\/[1-9][0-9]*\/decision\z/', $route) === 1) {
+        $knownRoutes[$route] = ['POST'];
+    }
+    if (preg_match('/\A(?:families|residents|invoices|announcements|activities)\/[1-9][0-9]*\z/', $route) === 1) {
+        $knownRoutes[$route] = ['PATCH', 'DELETE'];
+    }
+    if (preg_match('/\Apayments\/[1-9][0-9]*\/decision\z/', $route) === 1) {
         $knownRoutes[$route] = ['POST'];
     }
     if (isset($knownRoutes[$route])) {

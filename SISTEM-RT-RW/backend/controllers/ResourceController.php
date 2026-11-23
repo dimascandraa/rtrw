@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/middleware/auth.php';
 require_once dirname(__DIR__) . '/helpers/response.php';
 
+require_once dirname(__DIR__) . '/helpers/announcement-target-scope.php';
+
 function listResource(PDO $connection, array $user, string $resource): void
 {
     $resources = [
@@ -14,8 +16,8 @@ function listResource(PDO $connection, array $user, string $resource): void
             'rw' => 'rw.id',
             'limited' => 'w.id = :resident_id',
             'search' => ['w.nama_lengkap', 'w.telepon', 'rt.nomor_rt', 'rw.nomor_rw'],
-            'query' => 'SELECT w.id, w.nama_lengkap AS nama, w.telepon, w.status,
-                    w.jenis_kelamin, k.nomor_rumah, rt.nomor_rt, rw.nomor_rw
+            'query' => 'SELECT w.id, w.id_organisasi, w.nama_lengkap AS nama, w.telepon, w.status,
+                    w.jenis_kelamin, w.id_keluarga, k.nomor_rumah, rt.nomor_rt, rw.nomor_rw
                 FROM warga w
                 INNER JOIN keluarga k ON k.id = w.id_keluarga
                 INNER JOIN rt ON rt.id = k.id_rt
@@ -45,6 +47,32 @@ function listResource(PDO $connection, array $user, string $resource): void
             'query' => 'SELECT c.id, c.nama, c.jenis_iuran, c.deskripsi, c.aktif
                 FROM kategori_iuran c WHERE 1 = 1',
         ],
+        'keluarga' => [
+            'permission' => 'keluarga.read',
+            'organization' => 'k.id_organisasi',
+            'rt' => 'k.id_rt',
+            'rw' => 'rw.id',
+            'limited' => 'k.id = (
+                SELECT id_keluarga FROM warga
+                WHERE id = :resident_id AND status = \'aktif\' AND dihapus_pada IS NULL
+            )',
+            'search' => ['k.alamat', 'k.nomor_rumah', 'rt.nomor_rt', 'rw.nomor_rw'],
+            'query' => 'SELECT k.id, k.id_organisasi, k.id_rt, k.alamat, k.nomor_rumah, k.jenis_hunian,
+                    rt.nomor_rt, rw.nomor_rw,
+                    (SELECT COUNT(*) FROM warga w
+                     WHERE w.id_keluarga = k.id AND w.status = \'aktif\' AND w.dihapus_pada IS NULL) AS jumlah_warga
+                FROM keluarga k
+                INNER JOIN rt ON rt.id = k.id_rt
+                INNER JOIN rw ON rw.id = rt.id_rw
+                WHERE k.dihapus_pada IS NULL',
+        ],
+        'periode-tagihan' => [
+            'permission' => 'tagihan.read',
+            'organization' => 'p.id_organisasi',
+            'search' => ['p.nama', 'p.status'],
+            'query' => 'SELECT p.id, p.id_organisasi, p.nama, p.periode_mulai, p.periode_akhir, p.status
+                FROM periode_tagihan p WHERE 1 = 1',
+        ],
         'tagihan' => [
             'permission' => 'tagihan.read',
             'organization' => 't.id_organisasi',
@@ -55,7 +83,7 @@ function listResource(PDO $connection, array $user, string $resource): void
                 WHERE id = :resident_id AND status = \'aktif\' AND dihapus_pada IS NULL
             )',
             'search' => ['t.nomor_tagihan', 'k.nomor_rumah', 'p.nama', 't.status'],
-            'query' => 'SELECT t.id, t.nomor_tagihan, p.nama AS periode, k.nomor_rumah,
+            'query' => 'SELECT t.id, t.id_organisasi, t.id_keluarga, t.id_periode_tagihan, t.nomor_tagihan, p.nama AS periode, k.nomor_rumah,
                     t.total_nominal, t.nominal_dibayar, t.status, t.tanggal_jatuh_tempo
                 FROM tagihan t
                 INNER JOIN keluarga k ON k.id = t.id_keluarga
@@ -74,8 +102,8 @@ function listResource(PDO $connection, array $user, string $resource): void
                 WHERE id = :resident_id AND status = \'aktif\' AND dihapus_pada IS NULL
             )',
             'search' => ['t.nomor_tagihan', 'p.metode', 'p.status'],
-            'query' => 'SELECT p.id, t.nomor_tagihan, p.nominal, p.metode, p.status,
-                    p.dibayar_pada, p.diverifikasi_pada
+            'query' => 'SELECT p.id, p.id_organisasi, p.id_tagihan, t.nomor_tagihan, p.nominal, p.metode, p.status,
+                    p.referensi_pembayaran, p.catatan_verifikasi, p.dibayar_pada, p.diverifikasi_pada
                 FROM pembayaran p
                 INNER JOIN tagihan t ON t.id = p.id_tagihan
                 INNER JOIN keluarga k ON k.id = t.id_keluarga
@@ -132,20 +160,30 @@ function listResource(PDO $connection, array $user, string $resource): void
             'permission' => 'pengumuman.read',
             'organization' => 'p.id_organisasi',
             'rt' => 'p.id_rt',
+            'rw' => 'rw.id',
+            'include_global_for_region' => true,
+            'region_safe_when_restricted' => true,
             'search' => ['p.judul', 'p.isi'],
-            'query' => 'SELECT p.id, p.judul, p.isi, p.dipublikasikan_pada,
+            'query' => 'SELECT p.id, p.id_organisasi, p.id_rt, p.judul, p.isi, p.dipublikasikan_pada,
                     p.kedaluwarsa_pada
-                FROM pengumuman p WHERE p.dihapus_pada IS NULL',
+                FROM pengumuman p
+                LEFT JOIN rt ON rt.id = p.id_rt
+                LEFT JOIN rw ON rw.id = rt.id_rw
+                WHERE p.dihapus_pada IS NULL',
         ],
         'kegiatan' => [
             'permission' => 'kegiatan.read',
             'organization' => 'k.id_organisasi',
             'rt' => 'k.id_rt',
+            'rw' => 'rw.id',
+            'include_global_for_region' => true,
+            'region_safe_when_restricted' => true,
             'search' => ['k.judul', 'k.deskripsi', 'k.jenis', 'k.lokasi'],
-            'query' => 'SELECT k.id, k.judul, k.deskripsi, k.jenis, k.mulai_pada,
+            'query' => 'SELECT k.id, k.id_organisasi, k.id_rt, k.judul, k.deskripsi, k.jenis, k.mulai_pada,
                     k.selesai_pada, k.lokasi, rt.nomor_rt
                 FROM kegiatan k
                 LEFT JOIN rt ON rt.id = k.id_rt
+                LEFT JOIN rw ON rw.id = rt.id_rw
                 WHERE k.dihapus_pada IS NULL',
         ],
         'pengaduan' => [
@@ -243,6 +281,11 @@ function listResource(PDO $connection, array $user, string $resource): void
     $permission = $configuration['permission'] === null
         ? ['terbatas' => 0]
         : requirePermission($connection, $user, $configuration['permission']);
+    if ($resource === 'pengumuman' && $user['role_code'] === 'warga') {
+        $configuration['query'] .= ' AND p.dipublikasikan_pada IS NOT NULL
+            AND p.dipublikasikan_pada <= NOW()
+            AND (p.kedaluwarsa_pada IS NULL OR p.kedaluwarsa_pada > NOW())';
+    }
     $limit = filter_var($_GET['limit'] ?? '50', FILTER_VALIDATE_INT, [
         'options' => ['min_range' => 1, 'max_range' => 100],
     ]);
@@ -263,10 +306,17 @@ function listResource(PDO $connection, array $user, string $resource): void
         $query .= ' AND ' . $configuration['fixed'];
         $parameters['actor_id'] = (int) $user['id'];
     }
+    if ($resource === 'pengumuman') {
+        $targetFilter = announcementTargetScope($user);
+        $query .= ' AND ' . $targetFilter['sql'];
+        $parameters = array_merge($parameters, $targetFilter['parameters']);
+    }
 
     $regionalLetterApprover = $resource === 'pengajuan-surat'
         && in_array($user['role_code'], ['ketua_rt', 'ketua_rw'], true);
-    if ((int) $permission['terbatas'] === 1 && !$regionalLetterApprover) {
+    $regionalContentAccess = !empty($configuration['region_safe_when_restricted'])
+        && ($user['rt_id'] !== null || $user['rw_id'] !== null);
+    if ((int) $permission['terbatas'] === 1 && !$regionalLetterApprover && !$regionalContentAccess) {
         if (!isset($configuration['limited']) || $user['id_warga'] === null) {
             jsonError(403, 'restricted_resource', 'Data fitur ini tidak tersedia untuk akses terbatas.');
         }
@@ -275,10 +325,18 @@ function listResource(PDO $connection, array $user, string $resource): void
             $parameters['resident_id'] = (int) $user['id_warga'];
         }
     } elseif (isset($configuration['rt']) && $user['rt_id'] !== null) {
-        $query .= ' AND ' . $configuration['rt'] . ' = :rt_id';
+        if (!empty($configuration['include_global_for_region'])) {
+            $query .= ' AND (' . $configuration['rt'] . ' = :rt_id OR ' . $configuration['rt'] . ' IS NULL)';
+        } else {
+            $query .= ' AND ' . $configuration['rt'] . ' = :rt_id';
+        }
         $parameters['rt_id'] = (int) $user['rt_id'];
     } elseif (isset($configuration['rw']) && $user['rw_id'] !== null) {
-        $query .= ' AND ' . $configuration['rw'] . ' = :rw_id';
+        if (!empty($configuration['include_global_for_region'])) {
+            $query .= ' AND (' . $configuration['rw'] . ' = :rw_id OR ' . $configuration['rt'] . ' IS NULL)';
+        } else {
+            $query .= ' AND ' . $configuration['rw'] . ' = :rw_id';
+        }
         $parameters['rw_id'] = (int) $user['rw_id'];
     }
 
@@ -301,15 +359,22 @@ function listResource(PDO $connection, array $user, string $resource): void
     foreach ($parameters as $name => $value) {
         $statement->bindValue(':' . $name, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
     }
-    $statement->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $statement->bindValue(':limit', $limit + 1, PDO::PARAM_INT);
     $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
     $statement->execute();
 
+    $items = $statement->fetchAll();
+    $hasMore = count($items) > $limit;
+    if ($hasMore) {
+        array_pop($items);
+    }
+
     jsonSuccess([
-        'items' => $statement->fetchAll(),
+        'items' => $items,
         'pagination' => [
             'limit' => $limit,
             'offset' => $offset,
+            'hasMore' => $hasMore,
         ],
     ]);
 }

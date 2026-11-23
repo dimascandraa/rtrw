@@ -7,8 +7,9 @@ api.base.url=http://localhost:8000
 # Batas waktu permintaan ke server, dalam detik.
 api.timeout.seconds=15
 
-# Nama kolom JSON untuk email/telepon pada POST /api/login.
-api.login.field=email
+# Nama kolom JSON untuk email/telepon pada POST /api/v1/auth/login.
+api.login.field=identity
 
-# Peran yang memakai aplikasi Mobile dan ditolak di desktop (pisahkan dengan koma).
-desktop.blocked.roles=warga
+# Opsional: peran yang diblokir di desktop (pisahkan dengan koma).
+# Kosongkan agar izin backend menentukan fitur yang dapat digunakan.
+desktop.blocked.roles=

@@ -1,6 +1,6 @@
 # Aplikasi Desktop: Sistem Informasi RT/RW
 
-Aplikasi desktop **Java Swing** untuk pengurus RT/RW (Bendahara, Ketua RT/RW, Admin). Aplikasi ini hanya **klien REST API**: semua data dan aturan bisnis ada di Backend PHP Native, dan hanya backend yang mengakses MySQL.
+Aplikasi desktop **Java Swing** untuk warga dan pengurus RT/RW. Fitur yang ditampilkan mengikuti izin dari backend; semua data dan aturan bisnis tetap berada di Backend PHP Native, dan hanya backend yang mengakses MySQL.
 
 ```
 Web (HTML, CSS, JS) ─┐
@@ -50,11 +50,11 @@ Cara ini menjalankan aplikasi beserta API tiruan berisi data contoh. Tidak perlu
    .\run.bat
    ```
 
-   Tunggu sampai `build.bat` menampilkan `Selesai: out\rtrw-desktop.jar`. Saat jendela login terbuka, isi:
+   Tunggu sampai `build.bat` menampilkan `Selesai: out\rtrw-desktop.jar`.    Saat jendela login terbuka, akun demo tersedia:
 
    - **Alamat server:** `http://127.0.0.1:8000`
-   - **Email atau telepon:** `admin@rtrw.test`
-   - **Kata sandi:** `admin123`
+   - **Admin RW:** `admin@rtrw.test` / `admin123`
+   - **Warga:** `warga@rtrw.test` / `warga123` (termasuk pengajuan surat online)
 
    `run.bat` akan membangun JAR otomatis jika belum ada. Menjalankan `build.bat` secara eksplisit di atas membantu memastikan JAR terbaru berhasil dibuat.
 
@@ -99,7 +99,7 @@ Ganti URL dengan alamat backend yang benar. Alternatifnya, buka aplikasi tanpa a
 | `Unable to access jarfile` atau `Could not find or load main class` | Build mungkin belum berhasil. Jalankan `.\build.bat` dan pastikan ada pesan `Selesai: out\rtrw-desktop.jar` sebelum menjalankan `.\run.bat`. |
 | `Address already in use` saat menjalankan API tiruan | Port 8000 sedang dipakai. Jalankan `.\mock-server.bat 8001`, lalu gunakan alamat `http://127.0.0.1:8001` di halaman login. |
 | Aplikasi menampilkan tidak dapat terhubung ke server | Pastikan terminal API tiruan masih terbuka dan alamat/port di halaman login sama dengan alamat yang dicetak oleh server. |
-| Login ditolak | Untuk API tiruan, gunakan tepat `admin@rtrw.test` dan `admin123`. Akun `warga@rtrw.test` memang tidak diizinkan masuk ke aplikasi desktop. |
+| Login ditolak | Untuk API tiruan, gunakan salah satu akun demo yang tertera di atas. Untuk backend sendiri, akun harus aktif dan memiliki penugasan wilayah. |
 | JAR tidak dapat ditulis karena sedang digunakan | Tutup semua jendela aplikasi desktop yang berjalan, kemudian jalankan ulang `.\build.bat`. |
 
 Jika masih gagal, kirimkan **pesan error lengkap dari terminal** dan sebutkan perintah terakhir yang dijalankan. Jangan kirim kata sandi atau token backend.
@@ -117,53 +117,30 @@ Jika masih gagal, kirimkan **pesan error lengkap dari terminal** dan sebutkan pe
 
 | Menu | Endpoint | Fungsi | Fitur di Daftar Fitur |
 |---|---|---|---|
-<<<<<<< HEAD
 | Koneksi | `GET /api/v1/health` | Memeriksa konektivitas API dan database | (internal) |
-| Login dan sesi | `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout` | Masuk, memuat profil sesi, dan keluar; cookie sesi disimpan otomatis | (akses) |
-| Beranda dan navigasi modul | - | Beranda menampilkan 11 modul dan 26 kartu fitur sesuai rancangan UI/UX; setiap modul punya halaman katalog sendiri | Navigasi UI/UX |
+| Login dan sesi | `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout` | Masuk dengan token native dan cookie sesi, memuat profil, lalu mencabut sesi saat keluar | (akses) |
+| Beranda dan navigasi modul | - | Beranda hanya menampilkan modul/fitur yang sesuai izin akun; setiap modul memiliki halaman katalog | Navigasi UI/UX |
 | Dashboard statistik | `GET /api/v1/dashboard/summary` | Statistik warga dan tagihan dari ringkasan backend | F-015 (versi ringkas) |
 | Pengumuman | `GET /api/v1/announcements?limit=50` | Daftar pengumuman sesuai wilayah dan hak akses pengguna | F-017 |
 | Notifikasi | `GET /api/v1/notifications?limit=50` | Daftar notifikasi pengguna dan jumlah yang belum dibaca | Komunikasi |
-=======
-| Login | `POST /api/login` | Masuk, token dan cookie sesi dibaca otomatis | (akses) |
-| Beranda dan navigasi modul | - | Beranda menampilkan 11 modul dan 26 kartu fitur sesuai rancangan UI/UX; setiap modul punya halaman katalog sendiri | Navigasi UI/UX |
-| Dashboard statistik | `GET /api/residents`, `GET /api/invoices` | Jumlah warga, tagihan lunas/belum, persentase pelunasan | F-015 (versi ringkas) |
-| Data warga | `GET`, `POST /api/residents` | Daftar, cari, tambah warga | F-004 |
-| Tagihan | `GET /api/invoices` | Daftar tagihan dan status | F-009 |
-| Pembayaran | `GET /api/payments`, `POST /api/payments/verify` | Daftar dan verifikasi (terima/tolak) oleh bendahara | F-010, F-011 |
-| Pengumuman | `GET /api/announcements` | Daftar pengumuman | F-017 |
-| Laporan | `GET /api/reports` | Daftar laporan | F-016 |
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
-| Semua tabel | - | Cari, urutkan kolom, **Ekspor CSV** (terbaca di Excel), **Cetak**, detail baris (klik dua kali) | F-016 |
+| Data operasional | `GET /api/v1/resources/{resource}` | Membaca daftar resource sesuai peran dan wilayah akun, termasuk warga, tagihan, pembayaran, kegiatan, pengaduan, serta pengaturan | Beragam |
+| Registrasi akun | `POST /api/v1/auth/register` | Formulir publik pada halaman login mengirim pendaftaran akun warga untuk ditinjau pengurus | Akses |
+| Persetujuan pendaftaran | `GET /api/v1/registrations/pending`, `POST /api/v1/registrations/{id}/approve` | Melihat dan menyetujui pendaftaran yang dapat ditinjau akun | Akses |
+| Pengajuan surat online | `GET /api/v1/resources/jenis-surat`, `POST /api/v1/letters` | Warga aktif memilih jenis surat dan mengirim keperluan | Administrasi |
+| Persetujuan surat | `GET /api/v1/resources/pengajuan-surat`, `POST /api/v1/letters/{id}/decision` | Meninjau pengajuan dan mengirim keputusan setuju/tolak beserta catatan | Administrasi |
+| Profil dan keamanan | `PATCH /api/v1/auth/profile`, `POST /api/v1/auth/password` | Memperbarui profil sendiri atau mengganti kata sandi dengan verifikasi kata sandi saat ini | Akses |
+| Semua tabel | - | Cari, pagination server, urutkan kolom, **Ekspor CSV** halaman aktif, **Cetak**, detail baris (klik dua kali) | F-016 |
 | Tema | - | Mode terang/gelap, pilihan diingat | F-027 |
 
 Status berwarna mengikuti desain UI/UX: hijau (selesai), kuning (menunggu), merah (ditolak/menunggak). Sesi yang berakhir (HTTP 401) otomatis kembali ke halaman login.
 
-<<<<<<< HEAD
-Menu dan kartu katalog tersedia untuk semua 11 modul pada rancangan UI/UX. Halaman operasional yang belum memiliki endpoint backend menampilkan pemberitahuan bahwa fitur menunggu integrasi; data tiruan tidak ditampilkan. Backend saat ini belum menyediakan endpoint desktop untuk CRUD warga, tagihan, pembayaran/verifikasi, laporan, mutasi warga, surat, kas, kategori iuran, audit log, sesi/perangkat, multi-RT/RW, backup, kegiatan, pengaduan, kontak darurat, dan survei. Ekspor PDF dan XLSX asli membutuhkan library, jadi sementara memakai CSV dan cetak.
+Menu dan kartu katalog difilter menggunakan `user.permissions` dan `roleCode` dari backend; backend tetap memeriksa setiap permintaan. Desktop menyediakan registrasi publik, pengajuan surat untuk Warga, persetujuan pendaftaran/surat dan pembayaran untuk pengurus, pengelolaan keluarga/warga/tagihan/pengumuman/kegiatan sesuai izin, ekspor laporan XLSX, serta cetak laporan melalui dialog sistem (termasuk printer PDF bila tersedia). Backend tetap menjadi sumber kebenaran untuk validasi, wilayah, dan izin.
 
 ## Kontrak API desktop
 
-Desktop memakai prefix `/api/v1`, format respons backend `{ "data": ... }` atau `{ "error": { "code": "...", "message": "..." } }`, dan cookie sesi `HttpOnly` dari backend. Endpoint dashboard, pengumuman, dan notifikasi memerlukan sesi aktif. Daftar pada respons `data.items` ditampilkan di tabel; metadata `unreadCount` ditampilkan sebagai jumlah belum dibaca. Daftar endpoint lengkap dan aturan login ada di `backend/README.md`.
-=======
-Menu dan kartu katalog tersedia untuk semua 11 modul pada rancangan UI/UX. Halaman operasional yang belum memiliki endpoint desktop menampilkan pemberitahuan bahwa fitur menunggu integrasi; data tiruan tidak ditampilkan. Fitur tersebut meliputi mutasi warga, surat, kas, kategori iuran, audit log, sesi/perangkat, multi-RT/RW, backup, notifikasi, kegiatan, pengaduan, kontak darurat, dan survei. Ekspor PDF dan XLSX asli membutuhkan library, jadi sementara memakai CSV dan cetak. Ini perlu persetujuan tim dan dosen bila ingin ditambah.
+Desktop memakai prefix `/api/v1`. Login mengirim `client: "desktop"` dan menyimpan `accessToken` sebagai `Authorization: Bearer ...`; cookie sesi PHP juga disimpan otomatis. Endpoint selain health, login, dan registrasi memerlukan sesi yang sesuai. Backend membatasi resource berdasarkan peran dan wilayah, dan menjadi sumber kebenaran untuk seluruh izin.
 
-## Asumsi kontrak API (WAJIB dicocokkan dengan Dimas)
-
-`documentation/API/` belum saya lihat, jadi bagian berikut adalah **asumsi**. Semuanya terpusat sehingga mudah diubah.
-
-| Asumsi | Lokasi perubahan |
-|---|---|
-| Respons berbentuk `{"success":true,"message":"...","data":[...]}`. Daftar boleh di akar, di `data`, atau di `data.items`. Kegagalan: `{"success":false,"message":"..."}` atau HTTP 4xx/5xx | `api/ApiData.java` |
-| Login: body `{"email": "...", "password": "..."}` (nama kolom di `api.login.field`). Respons memuat `token` dan `user` (di akar atau di `data`) | `ApiClient.login`, `config.properties` |
-| Token dikirim sebagai `Authorization: Bearer <token>`. Cookie sesi PHP juga disimpan otomatis | `api/ApiClient.java` |
-| Peran dibaca dari `user.peran` / `role` / `nama_peran`; peran `warga` ditolak | `ApiClient.userRole`, `desktop.blocked.roles` |
-| `GET /api/payments` ada (daftar pembayaran); `GET /api/announcements` dan `GET /api/reports` mengembalikan daftar | `ui/MainFrame.java` |
-| Verifikasi: `POST /api/payments/verify` body `{"id":..., "status":"diterima"\|"ditolak", "catatan":"..."}` | `ui/PaymentsPanel.java` |
-| Tambah warga: body `{nik, nama, no_kk, alamat, telepon}` | `FORM_FIELDS` di `ui/ResidentsPanel.java` |
-| Status tagihan lunas = kolom berisi kata "status" yang memuat "lunas" tanpa "belum" | `DashboardPanel.isPaid` |
-| Kolom tabel dibuat otomatis dari kunci JSON; kunci berisi `password`, `token`, `hash`, `secret` disembunyikan | `DataTablePanel` |
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+Respons sukses menggunakan pembungkus `data`; daftar ditampilkan dari `data.items`. Body profil menggunakan `name`, `email`, dan `phone`; kata sandi menggunakan `currentPassword` dan `newPassword`; pengajuan surat menggunakan `jenisSuratId` dan `keperluan`; keputusan surat menggunakan `keputusan` (`setuju`/`tolak`) dan `catatan`. Daftar endpoint lengkap ada di [`../documentation/API/README.md`](../documentation/API/README.md). HTTP 401 mengarahkan pengguna kembali ke login, sedangkan HTTP 403 ditampilkan sebagai penolakan akses dari backend.
 
 ## Struktur
 
@@ -174,7 +151,8 @@ desktop/
 │   ├── api/       Json, ApiClient, ApiData, ApiException
 │   ├── config/    AppConfig (config.properties)
 │   ├── ui/        LoginFrame, MainFrame, DashboardPanel, DataTablePanel,
-│   │              ResidentsPanel, PaymentsPanel, Theme, FlatButton, UiKit
+│   │              RegistrationApprovalPanel, LetterDecisionPanel,
+│   │              AccountRegistrationPanel, AccountSettingsPanel, Theme, FlatButton, UiKit
 │   └── util/      CsvExporter
 ├── src/dev/java/…/dev/MockServer.java     API tiruan (hanya untuk pengembangan)
 ├── src/test/java/…/TestRunner.java        pengujian tanpa framework
@@ -185,18 +163,19 @@ desktop/
 
 ## Menambah halaman baru
 
-Halaman daftar baru cukup dua baris di `ui/MainFrame.java`:
+Halaman daftar resource baru dapat memakai klien dan tabel generik yang ada di `ui/MainFrame.java`:
 
 1. Tambahkan menu di blok `static`: `MENU.put("kas", "Kas");`
 2. Tambahkan `case` di `page(...)`:
 
 ```java
 case "kas":
-    page = new DataTablePanel(api, "Kas", "Kas masuk dan pengeluaran.", "/api/cash", this);
+    page = new DataTablePanel(api, "Kas", "Kas masuk dan pengeluaran.",
+            () -> api.resource("transaksi-kas"), this);
     break;
 ```
 
-Kolom tabel, pencarian, ekspor CSV, cetak, dan penanganan sesi sudah otomatis. Untuk aksi khusus (tambah/ubah/verifikasi), turunkan `DataTablePanel` seperti `ResidentsPanel` dan `PaymentsPanel`, lalu tambahkan tombol dengan `addAction(...)` dan kirim data dengan `postAsync(...)`.
+Kolom tabel, pencarian, ekspor CSV, cetak, dan penanganan sesi sudah otomatis. Tambahkan aksi tulis hanya jika endpoint tersedia di kontrak backend; tangani error HTTP tanpa menganggap penolakan akses sebagai daftar kosong.
 
 ## Membuat paket aplikasi (RT-027)
 

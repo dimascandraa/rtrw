@@ -77,6 +77,10 @@ public final class ApiData {
                     return ((String) v).trim();
                 }
             }
+            Object error = map.get("error");
+            if (error instanceof Map) {
+                return message(error);
+            }
         }
         return null;
     }
@@ -137,7 +141,6 @@ public final class ApiData {
         return null;
     }
 
-<<<<<<< HEAD
     /** Membaca angka dari respons atau objek di dalam "data". */
     public static Integer findInteger(Object json, String key) {
         if (!(json instanceof Map)) {
@@ -159,8 +162,6 @@ public final class ApiData {
         return data instanceof Map ? findInteger(data, key) : null;
     }
 
-=======
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
     /** Teks yang ditampilkan di tabel untuk sebuah nilai JSON. */
     public static String display(Object v) {
         if (v == null) {

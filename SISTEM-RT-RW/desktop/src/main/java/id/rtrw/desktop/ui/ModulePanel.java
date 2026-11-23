@@ -43,6 +43,120 @@ final class ModulePanel extends JPanel {
         return null;
     }
 
+    static boolean hasAccessibleFeature(ApiClient api, String moduleId) {
+        ModuleInfo module = module(moduleId);
+        if (module == null) {
+            return false;
+        }
+        for (FeatureInfo feature : module.features) {
+            if (isFeatureAccessible(api, feature.target)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean isFeatureAccessible(ApiClient api, String target) {
+        if (target == null) {
+            return false;
+        }
+        if (target.startsWith("resource-")) {
+            String resource = target.substring("resource-".length());
+            String permission = resourcePermission(resource);
+            return permission == null || api.hasPermission(permission);
+        }
+        switch (target) {
+            case "dashboard-stats":
+                return api.hasPermissions("warga.read", "laporan_keuangan.read");
+            case "announcement-list":
+                return api.hasPermission("pengumuman.read");
+            case "announcement-management":
+                return api.hasPermission("pengumuman.read")
+                        && (api.hasPermission("pengumuman.create")
+                        || api.hasPermission("pengumuman.update")
+                        || api.hasPermission("pengumuman.delete"));
+            case "activity-management":
+                return api.hasPermission("kegiatan.read")
+                        && (api.hasPermission("kegiatan.create")
+                        || api.hasPermission("kegiatan.update")
+                        || api.hasPermission("kegiatan.delete"));
+            case "payment-verification":
+                return api.hasPermissions("pembayaran.read", "pembayaran.update");
+            case "report-export":
+                return api.hasPermission("laporan_keuangan.read");
+            case "notification-list":
+            case "account-settings":
+            case "account-registration":
+                return true;
+            case "registrations-pending":
+                return hasRole(api, "super_admin", "admin_rw", "ketua_rw", "ketua_rt");
+            case "letters-pending":
+                return hasRole(api, "super_admin", "admin_rw", "ketua_rw", "ketua_rt", "sekretaris")
+                        && api.hasPermissions("pengajuan_surat.read", "pengajuan_surat.approve");
+            case "letter-request":
+                return "warga".equals(api.userRoleCode()) && api.hasPermission("pengajuan_surat.create");
+            default:
+                return false;
+        }
+    }
+
+    private static String resourcePermission(String resource) {
+        switch (resource) {
+            case "warga":
+            case "survei":
+            case "kontak-darurat":
+                return "warga.read";
+            case "mutasi":
+                return "mutasi_warga.read";
+            case "kategori-iuran":
+                return "kategori_iuran.read";
+            case "keluarga":
+                return "keluarga.read";
+            case "tagihan":
+                return "tagihan.read";
+            case "pembayaran":
+                return "pembayaran.read";
+            case "transaksi-kas":
+                return "laporan_keuangan.read";
+            case "jenis-surat":
+                return "pengajuan_surat.create";
+            case "pengajuan-surat":
+                return "pengajuan_surat.read";
+            case "pengumuman":
+                return "pengumuman.read";
+            case "periode-tagihan":
+                return "tagihan.read";
+            case "kegiatan":
+                return "kegiatan.read";
+            case "pengaduan":
+                return "pengaduan.read";
+            case "pengguna":
+            case "peran":
+                return "pengguna.read";
+            case "audit-log":
+                return "laporan_aktivitas.read";
+            case "sesi":
+                return null;
+            case "wilayah":
+                return "wilayah.read";
+            case "pengaturan":
+            case "cadangan-data":
+                return "pengaturan.read";
+            default:
+                return "resource-unknown";
+        }
+    }
+
+    private static boolean hasRole(ApiClient api, String... allowedRoles) {
+        String role = api.userRoleCode();
+        for (String allowed : allowedRoles) {
+            if (allowed.equals(role)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     ModulePanel(ApiClient api, ModuleInfo module, BiConsumer<String, String> openFeature) {
         this.api = api;
         setLayout(new BorderLayout(0, 18));
@@ -60,7 +174,20 @@ final class ModulePanel extends JPanel {
             JLabel title = UiKit.label("Selamat datang, " + api.userName(), 24f, true, Theme.text());
             JLabel subtitle = UiKit.label(
                     "Pilih menu untuk mulai mengelola lingkungan RT/RW Anda.", 14f, false, Theme.muted());
-            JLabel count = UiKit.label("11 modul  \u00b7  26 fitur", 12f, true, Theme.primary());
+            int modules = 0;
+            int features = 0;
+            for (ModuleInfo item : MODULES) {
+                if (hasAccessibleFeature(api, item.id)) {
+                    modules++;
+                    for (FeatureInfo feature : item.features) {
+                        if (isFeatureAccessible(api, feature.target)) {
+                            features++;
+                        }
+                    }
+                }
+            }
+            JLabel count = UiKit.label(modules + " modul  \u00b7  " + features + " fitur tersedia",
+                    12f, true, Theme.primary());
             header.add(title);
             header.add(Box.createVerticalStrut(4));
             header.add(subtitle);
@@ -78,20 +205,30 @@ final class ModulePanel extends JPanel {
         JPanel grid = new CardGrid();
         if (module == null) {
             for (ModuleInfo item : MODULES) {
-                grid.add(card(item.shortName, item.title, item.description,
-                        item.features.size() + " fitur",
-                        "Buka modul", () -> openFeature.accept(item.id, null)));
+                if (hasAccessibleFeature(api, item.id)) {
+                    int available = 0;
+                    for (FeatureInfo feature : item.features) {
+                        if (isFeatureAccessible(api, feature.target)) {
+                            available++;
+                        }
+                    }
+                    grid.add(card(item.shortName, item.title, item.description,
+                            available + " fitur tersedia",
+                            "Buka modul", () -> openFeature.accept(item.id, null)));
+                }
             }
         } else {
             for (FeatureInfo feature : module.features) {
+                if (feature.target != null && !isFeatureAccessible(api, feature.target)) {
+                    continue;
+                }
                 grid.add(card(String.format("%02d", module.features.indexOf(feature) + 1),
                         feature.title, feature.description,
-                        feature.target == null ? "Tahap integrasi berikutnya" : "Tersedia di desktop",
+                        feature.target == null ? "Endpoint belum tersedia" : "Tersedia di desktop",
                         "Lihat tampilan", () -> {
                             if (feature.target == null) {
                                 JOptionPane.showMessageDialog(this,
-                                        "Halaman operasional fitur ini belum tersedia di desktop karena "
-                                                + "endpoint API belum terintegrasi.",
+                                        "Backend belum menyediakan endpoint operasional untuk fitur ini.",
                                         feature.title, JOptionPane.INFORMATION_MESSAGE);
                             } else {
                                 openFeature.accept(module.id, feature.target);
@@ -208,112 +345,108 @@ final class ModulePanel extends JPanel {
                         "kas, tagihan, pembayaran, warga", "dashboard-stats"),
                 feature("Laporan PDF/Excel",
                         "Ekspor laporan kas, iuran, tunggakan, dan rekap pembayaran.",
-<<<<<<< HEAD
-                        "kas, tagihan, pembayaran", null)));
+                        "kas, tagihan, pembayaran", "report-export")));
         items.add(module("residents", "Manajemen Data Warga", "M", "Data warga, keluarga, dan mutasi.",
                 feature("Data warga & kepala keluarga",
-                        "Kelola profil warga, anggota keluarga, dan kepala keluarga per wilayah.",
-                        "warga, keluarga", null),
-=======
-                        "kas, tagihan, pembayaran", "report-list")));
-        items.add(module("residents", "Manajemen Data Warga", "M", "Data warga, keluarga, dan mutasi.",
-                feature("Data warga & kepala keluarga",
-                        "Kelola profil warga, anggota keluarga, dan kepala keluarga per wilayah.",
-                        "warga, keluarga", "resident-list"),
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+                        "Lihat profil warga, data keluarga, dan kepala keluarga sesuai wilayah.",
+                        "warga, keluarga", "resource-warga"),
+                feature("Data keluarga",
+                        "Kelola data keluarga dan alamat rumah sesuai wilayah.",
+                        "keluarga", "resource-keluarga"),
                 feature("Mutasi dan riwayat warga",
-                        "Catat warga pindah masuk, pindah keluar, kelahiran, dan perubahan status.",
-                        "mutasi_warga, warga", null)));
+                        "Lihat riwayat warga pindah masuk/keluar dan perubahan status.",
+                        "mutasi_warga, warga", "resource-mutasi")));
         items.add(module("finance", "Keuangan RT/RW", "K", "Iuran, tagihan, pembayaran, dan kas.",
                 feature("Kategori dan aturan iuran",
-                        "Atur jenis iuran, nominal, siklus, jatuh tempo, dan cakupan RT.",
-                        "kategori_iuran, aturan_iuran", null),
+                        "Lihat kategori iuran yang dikonfigurasi untuk wilayah Anda.",
+                        "kategori_iuran, aturan_iuran", "resource-kategori-iuran"),
                 feature("Tagihan otomatis",
                         "Lihat tagihan per keluarga, periode, jumlah, dan status pembayarannya.",
-<<<<<<< HEAD
-                        "periode_tagihan, tagihan", null),
+                        "periode_tagihan, tagihan", "resource-tagihan"),
                 feature("Pembayaran QRIS/transfer/tunai",
                         "Telusuri pembayaran warga melalui QRIS, transfer, atau tunai.",
-                        "pembayaran, tagihan", null),
-                feature("Verifikasi bukti pembayaran",
-                        "Periksa bukti transfer dan tindak lanjuti pembayaran yang menunggu verifikasi.",
-                        "pembayaran, bukti_pembayaran", null),
-=======
-                        "periode_tagihan, tagihan", "invoice-list"),
-                feature("Pembayaran QRIS/transfer/tunai",
-                        "Telusuri pembayaran warga melalui QRIS, transfer, atau tunai.",
-                        "pembayaran, tagihan", "payment-list"),
+                        "pembayaran, tagihan", "resource-pembayaran"),
                 feature("Verifikasi bukti pembayaran",
                         "Periksa bukti transfer dan tindak lanjuti pembayaran yang menunggu verifikasi.",
                         "pembayaran, bukti_pembayaran", "payment-verification"),
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                 feature("Riwayat pembayaran & kuitansi",
                         "Telusuri pembayaran terverifikasi dan kuitansi digital.",
-                        "pembayaran, kuitansi", null),
+                        "pembayaran, kuitansi", "resource-pembayaran"),
                 feature("Kas masuk dan pengeluaran",
-                        "Catat arus kas lingkungan dan lihat saldo berdasarkan transaksi.",
-                        "transaksi_kas", null),
+                        "Lihat transaksi kas masuk dan pengeluaran.",
+                        "transaksi_kas", "resource-transaksi-kas"),
                 feature("Pengingat iuran/tunggakan",
                         "Pantau pengingat tagihan yang mendekati jatuh tempo atau belum dibayar.",
-                        "tagihan, notifikasi", null)));
+                        "tagihan, notifikasi", "notification-list")));
         items.add(module("letters", "Administrasi Surat", "A", "Pengajuan dan persetujuan surat.",
                 feature("Pengajuan surat online",
-                        "Ajukan surat keterangan domisili, pengantar, dan surat keterangan usaha.",
-                        "jenis_surat, pengajuan_surat", null),
+                        "Pilih jenis surat aktif dan ajukan keperluan untuk wilayah Anda.",
+                        "jenis_surat, pengajuan_surat", "letter-request"),
+                feature("Status pengajuan surat",
+                        "Lihat status pengajuan surat yang dapat diakses akun Anda.",
+                        "pengajuan_surat", "resource-pengajuan-surat"),
                 feature("Verifikasi dan persetujuan surat",
                         "Tinjau kelengkapan data, catat keputusan, dan pantau status penerbitan.",
-                        "pengajuan_surat, persetujuan_surat", null)));
+                        "pengajuan_surat, persetujuan_surat", "letters-pending")));
         items.add(module("services", "Layanan Warga", "L", "Penilaian warga atas layanan pengurus.",
                 feature("Survei kepuasan warga",
                         "Lihat ringkasan penilaian dan masukan warga atas layanan.",
-                        "survei, jawaban_survei", null)));
+                        "survei, jawaban_survei", "resource-survei")));
         items.add(module("communications", "Informasi & Komunikasi", "I", "Pengumuman dan notifikasi.",
                 feature("Pengumuman RT/RW",
                         "Lihat informasi yang diterbitkan untuk warga atau wilayah tertentu.",
                         "pengumuman, target_pengumuman", "announcement-list"),
                 feature("Notifikasi aplikasi",
                         "Pantau pemberitahuan tagihan, pembayaran, dan informasi lingkungan.",
-<<<<<<< HEAD
-                        "notifikasi, log_notifikasi", "notification-list")));
-=======
-                        "notifikasi, log_notifikasi", null)));
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+                        "notifikasi, log_notifikasi", "notification-list"),
+                feature("Kelola pengumuman",
+                        "Buat, terbitkan, ubah, atau arsipkan informasi untuk wilayah Anda.",
+                        "pengumuman, target_pengumuman", "announcement-management")));
         items.add(module("activities", "Sosial & Kegiatan", "S", "Agenda kerja bakti dan kegiatan sosial.",
                 feature("Jadwal kegiatan/kerja bakti",
-                        "Bagikan agenda warga dan catat konfirmasi kehadiran kegiatan.",
-                        "kegiatan, kehadiran_kegiatan", null)));
+                        "Lihat agenda dan informasi kegiatan warga.",
+                        "kegiatan, kehadiran_kegiatan", "resource-kegiatan"),
+                feature("Kelola kegiatan",
+                        "Buat, ubah, atau arsipkan jadwal kegiatan pada wilayah Anda.",
+                        "kegiatan", "activity-management")));
         items.add(module("safety", "Keamanan & Lingkungan", "K", "Laporan kejadian dan kontak darurat.",
                 feature("Laporan keluhan/kejadian",
-                        "Sampaikan laporan lingkungan dan tindak lanjuti progres penanganannya.",
-                        "pengaduan, tanggapan_pengaduan", null),
+                        "Lihat laporan lingkungan dan status penanganannya.",
+                        "pengaduan, tanggapan_pengaduan", "resource-pengaduan"),
                 feature("Kontak darurat/direktori layanan",
-                        "Simpan kontak pengurus, keamanan, ambulans, polisi, dan layanan lainnya.",
-                        "kontak_darurat", null)));
+                        "Lihat kontak pengurus dan layanan darurat.",
+                        "kontak_darurat", "resource-kontak-darurat")));
         items.add(module("access", "Registrasi & Akses", "R", "Pendaftaran, verifikasi, dan hak akses.",
                 feature("Registrasi warga",
-                        "Daftarkan akun warga dan kirim kode verifikasi melalui email atau telepon.",
-                        "pengguna, kode_verifikasi", null),
+                        "Kirim pendaftaran akun warga untuk ditinjau pengurus.",
+                        "pengguna", "account-registration"),
                 feature("Verifikasi akun oleh Admin",
                         "Tinjau pendaftaran dan hubungkan akun dengan data warga serta wilayahnya.",
-                        "pengguna, warga, penugasan_pengguna", null),
+                        "pengguna, warga, penugasan_pengguna", "registrations-pending"),
                 feature("Manajemen peran dan hak akses",
-                        "Atur peran, penugasan wilayah, dan izin aksi setiap pengguna.",
-                        "peran, izin_akses, penugasan_pengguna", null)));
+                        "Lihat akun pengguna dan peran yang telah diberikan.",
+                        "peran, izin_akses, penugasan_pengguna", "resource-pengguna"),
+                feature("Daftar peran",
+                        "Lihat peran yang telah dikonfigurasi untuk organisasi.",
+                        "peran, izin_akses", "resource-peran")));
         items.add(module("account-security", "Keamanan Akun", "K", "Riwayat aktivitas dan sesi login.",
                 feature("Riwayat aktivitas/audit log",
                         "Lihat jejak aktivitas penting untuk membantu pengawasan dan audit.",
-                        "log_audit", null),
+                        "log_audit", "resource-audit-log"),
                 feature("Manajemen sesi/perangkat",
                         "Periksa perangkat yang pernah masuk dan cabut sesi yang tidak digunakan.",
-                        "sesi_pengguna", null)));
+                        "sesi_pengguna", "resource-sesi")));
         items.add(module("platform", "Manajemen Platform", "M",
                 "Multi-lingkungan serta ekspor dan backup data.",
                 feature("Multi-RT/RW",
-                        "Kelola organisasi, RW, RT, dan pengaturan lingkungan dalam satu platform.",
-                        "organisasi, rw, rt, pengaturan", null),
+                        "Lihat struktur RW/RT sesuai izin akun.",
+                        "organisasi, rw, rt, pengaturan", "resource-wilayah"),
+                feature("Pengaturan organisasi",
+                        "Lihat konfigurasi organisasi yang tersedia.",
+                        "pengaturan", "resource-pengaturan"),
                 feature("Ekspor dan backup data",
                         "Lihat riwayat pencadangan data dan status ekspor.",
-                        "cadangan_data", null)));
+                        "cadangan_data", "resource-cadangan-data")));
         return Collections.unmodifiableList(items);
     }
 

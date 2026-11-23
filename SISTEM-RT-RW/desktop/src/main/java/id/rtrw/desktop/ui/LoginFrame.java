@@ -7,6 +7,7 @@ import id.rtrw.desktop.config.AppConfig;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -29,11 +30,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
-<<<<<<< HEAD
 /** Halaman login: email/telepon dan kata sandi, ke POST /api/v1/auth/login. */
-=======
-/** Halaman login: email/telepon dan kata sandi, ke POST /api/login. */
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
 public final class LoginFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
@@ -90,7 +87,7 @@ public final class LoginFrame extends JFrame {
 
         form.add(left(UiKit.label("Masuk", 28f, true, Theme.text())));
         form.add(Box.createVerticalStrut(4));
-        form.add(left(UiKit.label("Gunakan akun pengurus RT/RW Anda.", 13f, false, Theme.muted())));
+        form.add(left(UiKit.label("Gunakan akun RT/RW Anda.", 13f, false, Theme.muted())));
         form.add(Box.createVerticalStrut(22));
 
         form.add(left(UiKit.label("Alamat server", 12f, true, Theme.text())));
@@ -119,6 +116,11 @@ public final class LoginFrame extends JFrame {
         loginButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         loginButton.addActionListener(e -> doLogin());
         form.add(left(loginButton));
+        form.add(Box.createVerticalStrut(14));
+        FlatButton registerButton = new FlatButton("Daftar akun warga", FlatButton.Kind.NEUTRAL);
+        registerButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        registerButton.addActionListener(e -> openRegistration());
+        form.add(left(registerButton));
         form.add(Box.createVerticalStrut(14));
         form.add(left(UiKit.label("Lupa kata sandi? Hubungi Admin RT/RW.", 12f, false, Theme.muted())));
 
@@ -178,10 +180,7 @@ public final class LoginFrame extends JFrame {
             @Override
             protected Void doInBackground() throws Exception {
                 api.login(identifier, password);
-<<<<<<< HEAD
                 api.currentUser();
-=======
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                 return null;
             }
 
@@ -201,17 +200,12 @@ public final class LoginFrame extends JFrame {
                 }
                 if (config.isRoleBlocked(api.userRole())) {
                     String role = api.userRole();
-<<<<<<< HEAD
                     try {
                         api.logoutServer();
                     } catch (ApiException ex) {
                         api.logout();
                     }
-=======
-                    api.logout();
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
-                    showMessage("Peran \"" + role + "\" memakai aplikasi Mobile. "
-                            + "Aplikasi desktop khusus pengurus RT/RW.", true);
+                    showMessage("Peran \"" + role + "\" tidak diizinkan menggunakan aplikasi desktop.", true);
                     return;
                 }
                 try {
@@ -227,6 +221,23 @@ public final class LoginFrame extends JFrame {
                 dispose();
             }
         }.execute();
+    }
+
+    private void openRegistration() {
+        String server = serverField.getText().trim();
+        if (server.isEmpty()) {
+            showMessage("Alamat server wajib diisi sebelum mendaftar.", true);
+            return;
+        }
+        api.setBaseUrl(server);
+
+        JDialog dialog = new JDialog(this, "Pendaftaran Akun Warga", true);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setContentPane(new AccountRegistrationPanel(api));
+        dialog.setMinimumSize(new Dimension(620, 430));
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
 
     // ------------------------------------------------------------------ panel merek

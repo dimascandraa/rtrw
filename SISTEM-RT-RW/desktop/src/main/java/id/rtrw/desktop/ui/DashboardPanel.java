@@ -13,19 +13,12 @@ import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
-<<<<<<< HEAD
  * Beranda: ringkasan jumlah warga dan kondisi tagihan dari
  * GET /api/v1/dashboard/summary.
-=======
- * Beranda: ringkasan jumlah warga dan kondisi tagihan. Angka dihitung dari
- * GET /api/residents dan GET /api/invoices (kolom "status" pada tagihan).
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
  */
 final class DashboardPanel extends JPanel implements Refreshable {
     private static final long serialVersionUID = 1L;
@@ -167,7 +160,6 @@ final class DashboardPanel extends JPanel implements Refreshable {
             protected Stats doInBackground() {
                 Stats s = new Stats();
                 try {
-<<<<<<< HEAD
                     Object response = api.dashboardSummary();
                     Map<String, Object> data = ApiData.findMap(response, "data");
                     Map<String, Object> stats = ApiData.findMap(data, "stats");
@@ -177,23 +169,6 @@ final class DashboardPanel extends JPanel implements Refreshable {
                     s.unpaid = integer(period, "unpaidInvoices");
                     s.invoices = (s.paid == null ? 0 : s.paid)
                             + (s.unpaid == null ? 0 : s.unpaid);
-=======
-                    s.residents = ApiData.rows(api.get("/api/residents")).size();
-                } catch (ApiException e) {
-                    s.fail(e);
-                }
-                try {
-                    List<Map<String, Object>> list = ApiData.rows(api.get("/api/invoices"));
-                    int ok = 0;
-                    for (Map<String, Object> row : list) {
-                        if (isPaid(row)) {
-                            ok++;
-                        }
-                    }
-                    s.invoices = list.size();
-                    s.paid = ok;
-                    s.unpaid = list.size() - ok;
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
                 } catch (ApiException e) {
                     s.fail(e);
                 }
@@ -221,16 +196,10 @@ final class DashboardPanel extends JPanel implements Refreshable {
         unpaid.setText(s.unpaid == null ? "-" : s.unpaid.toString());
 
         if (s.invoices != null && s.invoices > 0) {
-<<<<<<< HEAD
             int paidCount = s.paid == null ? 0 : s.paid;
             int pct = Math.round(100f * paidCount / s.invoices);
             progress.setValue(pct);
             progressText.setText(paidCount + " dari " + s.invoices + " tagihan sudah lunas (" + pct + "%)");
-=======
-            int pct = Math.round(100f * s.paid / s.invoices);
-            progress.setValue(pct);
-            progressText.setText(s.paid + " dari " + s.invoices + " tagihan sudah lunas (" + pct + "%)");
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
         } else {
             progress.setValue(0);
             progressText.setText("Belum ada data tagihan.");
@@ -242,7 +211,6 @@ final class DashboardPanel extends JPanel implements Refreshable {
         }
     }
 
-<<<<<<< HEAD
     private static Integer integer(Map<String, Object> map, String... keys) {
         if (map == null) {
             return null;
@@ -261,16 +229,4 @@ final class DashboardPanel extends JPanel implements Refreshable {
         return null;
     }
 
-=======
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
-    /** Tagihan dianggap lunas bila kolom status memuat "lunas" tanpa "belum". */
-    static boolean isPaid(Map<String, Object> row) {
-        for (Map.Entry<String, Object> e : row.entrySet()) {
-            if (e.getKey().toLowerCase(Locale.ROOT).contains("status") && e.getValue() != null) {
-                String s = e.getValue().toString().toLowerCase(Locale.ROOT);
-                return s.contains("lunas") && !s.contains("belum");
-            }
-        }
-        return false;
-    }
 }

@@ -1,6 +1,7 @@
 package id.rtrw.desktop.ui;
 
 import id.rtrw.desktop.api.ApiClient;
+import id.rtrw.desktop.api.ApiException;
 import id.rtrw.desktop.config.AppConfig;
 
 import javax.swing.Box;
@@ -10,6 +11,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -25,6 +27,7 @@ import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 
 /** Jendela utama: sidebar menu di kiri dan area konten di kanan. */
@@ -32,12 +35,34 @@ public final class MainFrame extends JFrame implements SessionListener {
     private static final long serialVersionUID = 1L;
 
     private static final Map<String, String> MENU = new LinkedHashMap<>();
+    private static final Map<String, String> RESOURCE_TITLES = new HashMap<>();
 
     static {
         MENU.put("beranda", "Beranda");
         for (ModulePanel.ModuleInfo module : ModulePanel.modules()) {
             MENU.put(module.id, module.title);
         }
+        RESOURCE_TITLES.put("warga", "Data Warga");
+        RESOURCE_TITLES.put("keluarga", "Data Keluarga");
+        RESOURCE_TITLES.put("mutasi", "Mutasi Warga");
+        RESOURCE_TITLES.put("kategori-iuran", "Kategori Iuran");
+        RESOURCE_TITLES.put("periode-tagihan", "Periode Tagihan");
+        RESOURCE_TITLES.put("tagihan", "Tagihan");
+        RESOURCE_TITLES.put("pembayaran", "Pembayaran");
+        RESOURCE_TITLES.put("transaksi-kas", "Transaksi Kas");
+        RESOURCE_TITLES.put("jenis-surat", "Jenis Surat");
+        RESOURCE_TITLES.put("pengajuan-surat", "Pengajuan Surat");
+        RESOURCE_TITLES.put("survei", "Survei");
+        RESOURCE_TITLES.put("kegiatan", "Kegiatan");
+        RESOURCE_TITLES.put("pengaduan", "Pengaduan");
+        RESOURCE_TITLES.put("kontak-darurat", "Kontak Darurat");
+        RESOURCE_TITLES.put("pengguna", "Pengguna");
+        RESOURCE_TITLES.put("peran", "Peran");
+        RESOURCE_TITLES.put("audit-log", "Audit Log");
+        RESOURCE_TITLES.put("sesi", "Sesi Perangkat");
+        RESOURCE_TITLES.put("wilayah", "Wilayah RT/RW");
+        RESOURCE_TITLES.put("pengaturan", "Pengaturan");
+        RESOURCE_TITLES.put("cadangan-data", "Riwayat Cadangan Data");
     }
 
     private final AppConfig config;
@@ -57,7 +82,9 @@ public final class MainFrame extends JFrame implements SessionListener {
         super("Sistem Informasi RT/RW - Desktop");
         this.config = config;
         this.api = api;
-        this.activeModule = MENU.containsKey(startModule) ? startModule : "beranda";
+        this.activeModule = MENU.containsKey(startModule)
+                && ("beranda".equals(startModule) || ModulePanel.hasAccessibleFeature(api, startModule))
+                ? startModule : "beranda";
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(960, 600));
@@ -85,7 +112,7 @@ public final class MainFrame extends JFrame implements SessionListener {
 
         JLabel logo = UiKit.label("RT/RW", 26f, true, Theme.accent());
         logo.setAlignmentX(LEFT_ALIGNMENT);
-        JLabel sub = UiKit.label("Desktop Pengurus", 12f, false, Theme.sidebarText());
+        JLabel sub = UiKit.label("Desktop RT/RW", 12f, false, Theme.sidebarText());
         sub.setAlignmentX(LEFT_ALIGNMENT);
         branding.add(logo);
         branding.add(sub);
@@ -97,6 +124,10 @@ public final class MainFrame extends JFrame implements SessionListener {
         navigation.setLayout(new BoxLayout(navigation, BoxLayout.Y_AXIS));
         navigation.setBorder(new EmptyBorder(4, 14, 8, 14));
         for (Map.Entry<String, String> item : MENU.entrySet()) {
+            if (!"beranda".equals(item.getKey())
+                    && !ModulePanel.hasAccessibleFeature(api, item.getKey())) {
+                continue;
+            }
             NavButton button = new NavButton(item.getValue());
             button.setAlignmentX(LEFT_ALIGNMENT);
             button.addMouseListener(new MouseAdapter() {
@@ -132,6 +163,13 @@ public final class MainFrame extends JFrame implements SessionListener {
         profile.add(role);
         profile.add(Box.createVerticalStrut(12));
 
+        FlatButton accountSettings = new FlatButton("Profil & Keamanan", FlatButton.Kind.NEUTRAL);
+        accountSettings.setAlignmentX(LEFT_ALIGNMENT);
+        accountSettings.setMaximumSize(new Dimension(Integer.MAX_VALUE, accountSettings.getPreferredSize().height));
+        accountSettings.addActionListener(e -> {
+            activeModule = "beranda";
+            show("account-settings");
+        });
         FlatButton theme = new FlatButton(Theme.isDark() ? "Mode Terang" : "Mode Gelap", FlatButton.Kind.NEUTRAL);
         theme.setAlignmentX(LEFT_ALIGNMENT);
         theme.setMaximumSize(new Dimension(Integer.MAX_VALUE, theme.getPreferredSize().height));
@@ -140,6 +178,8 @@ public final class MainFrame extends JFrame implements SessionListener {
         logout.setAlignmentX(LEFT_ALIGNMENT);
         logout.setMaximumSize(new Dimension(Integer.MAX_VALUE, logout.getPreferredSize().height));
         logout.addActionListener(e -> logout(null));
+        profile.add(accountSettings);
+        profile.add(Box.createVerticalStrut(8));
         profile.add(theme);
         profile.add(Box.createVerticalStrut(8));
         profile.add(logout);
@@ -171,47 +211,71 @@ public final class MainFrame extends JFrame implements SessionListener {
             case "platform":
                 page = new ModulePanel(api, ModulePanel.module(key), this::openFeature);
                 break;
-            case "resident-list":
-                page = new ResidentsPanel(api, this);
-                break;
-            case "invoice-list":
-                page = new DataTablePanel(api, "Tagihan",
-                        "Tagihan iuran per keluarga beserta status pembayarannya.", "/api/invoices", this);
-                break;
-            case "payment-list":
-                page = new DataTablePanel(api, "Pembayaran",
-                        "Riwayat pembayaran iuran warga.", "/api/payments", this);
-                break;
-            case "payment-verification":
-                page = new PaymentsPanel(api, this);
-                break;
             case "announcement-list":
                 page = new DataTablePanel(api, "Pengumuman",
-<<<<<<< HEAD
                         "Pengumuman RT/RW untuk wilayah Anda.", api::announcements, this);
                 break;
             case "notification-list":
                 page = new DataTablePanel(api, "Notifikasi",
-                        "Notifikasi untuk akun Anda. Kolom waktu dibaca kosong berarti belum dibaca.",
+                        "Notifikasi akun Anda. Waktu dibaca kosong berarti belum dibaca.",
                         api::notifications, this);
-=======
-                        "Pengumuman RT/RW untuk warga.", "/api/announcements", this);
                 break;
-            case "report-list":
-                page = new DataTablePanel(api, "Laporan",
-                        "Daftar laporan kas, iuran, dan tunggakan. Gunakan Ekspor CSV untuk membuka di Excel.",
-                        "/api/reports", this);
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+            case "registrations-pending":
+                page = new RegistrationApprovalPanel(api, this);
+                break;
+            case "letters-pending":
+                page = new LetterDecisionPanel(api, this);
+                break;
+            case "payment-verification":
+                page = new PaymentVerificationPanel(api, this);
+                break;
+            case "report-export":
+                page = new ReportExportPanel(api, this);
+                break;
+            case "announcement-management":
+                page = new ManagementTablePanel(api, ManagementTablePanel.Kind.ANNOUNCEMENTS, this);
+                break;
+            case "activity-management":
+                page = new ManagementTablePanel(api, ManagementTablePanel.Kind.ACTIVITIES, this);
+                break;
+            case "letter-request":
+                page = new LetterRequestPanel(api, this);
+                break;
+            case "account-settings":
+                page = new AccountSettingsPanel(api, this, this::refreshProfile);
+                break;
+            case "account-registration":
+                page = new AccountRegistrationPanel(api);
                 break;
             case "dashboard-stats":
                 page = new DashboardPanel(api, this);
                 break;
             default:
-                page = new DashboardPanel(api, this);
+                page = key.startsWith("resource-") ? resourcePage(key) : new DashboardPanel(api, this);
         }
         pages.put(key, page);
         content.add(page, key);
         return page;
+    }
+
+    private JPanel resourcePage(String pageKey) {
+        String resource = pageKey.substring("resource-".length());
+        String title = RESOURCE_TITLES.get(resource);
+        if (title == null) {
+            return new ModulePanel(api, null, this::openFeature);
+        }
+        switch (resource) {
+            case "warga":
+                return new ManagementTablePanel(api, ManagementTablePanel.Kind.RESIDENTS, this);
+            case "keluarga":
+                return new ManagementTablePanel(api, ManagementTablePanel.Kind.FAMILIES, this);
+            case "tagihan":
+                return new ManagementTablePanel(api, ManagementTablePanel.Kind.INVOICES, this);
+            default:
+                break;
+        }
+        return new DataTablePanel(api, title, "Data sesuai hak akses dan wilayah akun Anda.",
+                (limit, offset, search) -> api.resource(resource, limit, offset, search), this);
     }
 
     private void show(String key) {
@@ -237,18 +301,22 @@ public final class MainFrame extends JFrame implements SessionListener {
             show(moduleKey);
             return;
         }
+        if (!ModulePanel.isFeatureAccessible(api, featureKey)) {
+            return;
+        }
         activeModule = moduleKey;
         show(featureKey);
     }
 
     private static boolean isFeaturePage(String key) {
-<<<<<<< HEAD
-        return "dashboard-stats".equals(key) || "announcement-list".equals(key)
-                || "notification-list".equals(key);
-=======
-        return key != null && (key.endsWith("-list") || key.equals("payment-verification")
-                || key.equals("dashboard-stats"));
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+        return key != null && (key.startsWith("resource-") || key.equals("dashboard-stats")
+                || key.equals("announcement-list") || key.equals("notification-list")
+                || key.equals("announcement-management") || key.equals("activity-management")
+                || key.equals("payment-verification") || key.equals("report-export")
+                || key.equals("registrations-pending") || key.equals("letters-pending")
+                || key.equals("letter-request")
+                || key.equals("account-registration")
+                || key.equals("account-settings"));
     }
 
     // ------------------------------------------------------------------ sesi dan tema
@@ -262,19 +330,45 @@ public final class MainFrame extends JFrame implements SessionListener {
         dispose();
     }
 
-    private void logout(String message) {
-<<<<<<< HEAD
-        try {
-            api.logoutServer();
-        } catch (Exception ignored) {
-            api.logout();
-        }
-=======
-        api.logout();
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
-        LoginFrame login = new LoginFrame(config, api, message);
-        login.setVisible(true);
+    private void refreshProfile() {
+        MainFrame next = new MainFrame(config, api, current, activeModule);
+        next.setBounds(getBounds());
+        next.setExtendedState(getExtendedState());
+        next.setVisible(true);
         dispose();
+    }
+
+    private void logout(String message) {
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() {
+                try {
+                    api.logoutServer();
+                    return message;
+                } catch (ApiException ex) {
+                    api.logout();
+                    String prefix = message == null ? "" : message + "\n";
+                    return prefix + "Sesi lokal dihapus, tetapi server gagal mencabut sesi: " + ex.getMessage();
+                }
+            }
+
+            @Override
+            protected void done() {
+                String notice;
+                try {
+                    notice = get();
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    notice = "Permintaan keluar dibatalkan.";
+                } catch (ExecutionException ex) {
+                    api.logout();
+                    notice = "Sesi lokal dihapus. Gagal keluar dari server: " + ex.getCause().getMessage();
+                }
+                LoginFrame login = new LoginFrame(config, api, notice);
+                login.setVisible(true);
+                dispose();
+            }
+        }.execute();
     }
 
     @Override

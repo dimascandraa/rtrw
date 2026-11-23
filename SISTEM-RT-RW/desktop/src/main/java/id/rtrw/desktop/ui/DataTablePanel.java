@@ -16,6 +16,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.Timer;
 import javax.swing.RowFilter;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
@@ -62,23 +63,27 @@ import java.util.regex.Pattern;
 class DataTablePanel extends JPanel implements Refreshable {
     private static final long serialVersionUID = 1L;
 
-<<<<<<< HEAD
     interface ApiRequest {
         Object execute() throws ApiException;
+    }
+
+    interface PagedApiRequest {
+        Object execute(int limit, int offset, String search) throws ApiException;
     }
 
     private static final class TableData {
         final List<Map<String, Object>> rows;
         final Integer unreadCount;
+        final boolean hasMore;
 
-        TableData(List<Map<String, Object>> rows, Integer unreadCount) {
+        TableData(List<Map<String, Object>> rows, Integer unreadCount, boolean hasMore) {
             this.rows = rows;
             this.unreadCount = unreadCount;
+            this.hasMore = hasMore;
         }
     }
 
-=======
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+    private static final int PAGE_SIZE = 100;
     private static final String[] HIDDEN_KEY_PARTS = {"password", "kata_sandi", "token", "hash", "secret"};
     private static final Map<String, String> ACRONYMS = new HashMap<>();
 
@@ -90,11 +95,8 @@ class DataTablePanel extends JPanel implements Refreshable {
 
     protected final ApiClient api;
     private final String title;
-<<<<<<< HEAD
     private final ApiRequest request;
-=======
-    private final String endpoint;
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+    private final PagedApiRequest pagedRequest;
     private final SessionListener listener;
 
     private final DefaultTableModel model = new DefaultTableModel() {
@@ -118,26 +120,41 @@ class DataTablePanel extends JPanel implements Refreshable {
     private final JLabel statusLabel = new JLabel(" ");
     private final JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
     private final FlatButton reloadButton = new FlatButton("Muat Ulang", FlatButton.Kind.NEUTRAL);
+    private final FlatButton previousPageButton = new FlatButton("Sebelumnya", FlatButton.Kind.NEUTRAL);
+    private final FlatButton nextPageButton = new FlatButton("Berikutnya", FlatButton.Kind.NEUTRAL);
+    private final Timer searchTimer;
 
     private List<Map<String, Object>> rows = new ArrayList<>();
     private List<String> columns = new ArrayList<>();
+    private int pageOffset;
+    private boolean hasMore;
     private boolean loading;
+    private boolean refreshPending;
 
     DataTablePanel(ApiClient api, String title, String subtitle, String endpoint, SessionListener listener) {
-<<<<<<< HEAD
         this(api, title, subtitle, () -> api.get(endpoint), listener);
     }
 
     DataTablePanel(ApiClient api, String title, String subtitle, ApiRequest request, SessionListener listener) {
+        this(api, title, subtitle, request, null, listener);
+    }
+
+    DataTablePanel(ApiClient api, String title, String subtitle, PagedApiRequest request, SessionListener listener) {
+        this(api, title, subtitle, null, request, listener);
+    }
+
+    private DataTablePanel(ApiClient api, String title, String subtitle, ApiRequest request,
+            PagedApiRequest pagedRequest, SessionListener listener) {
         this.api = api;
         this.title = title;
         this.request = request;
-=======
-        this.api = api;
-        this.title = title;
-        this.endpoint = endpoint;
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+        this.pagedRequest = pagedRequest;
         this.listener = listener;
+        this.searchTimer = new Timer(300, event -> {
+            pageOffset = 0;
+            refresh();
+        });
+        this.searchTimer.setRepeats(false);
 
         setLayout(new BorderLayout(0, 12));
         setBackground(Theme.bg());
@@ -179,26 +196,34 @@ class DataTablePanel extends JPanel implements Refreshable {
         search.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                applyFilter();
+                searchChanged();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                applyFilter();
+                searchChanged();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                applyFilter();
+                searchChanged();
             }
         });
 
         actions.setOpaque(false);
+        previousPageButton.setVisible(pagedRequest != null);
+        nextPageButton.setVisible(pagedRequest != null);
+        previousPageButton.setEnabled(false);
+        nextPageButton.setEnabled(false);
+        previousPageButton.addActionListener(event -> changePage(pageOffset - PAGE_SIZE));
+        nextPageButton.addActionListener(event -> changePage(pageOffset + PAGE_SIZE));
         reloadButton.addActionListener(e -> refresh());
         FlatButton exportButton = new FlatButton("Ekspor CSV", FlatButton.Kind.NEUTRAL);
         exportButton.addActionListener(e -> exportCsv());
         FlatButton printButton = new FlatButton("Cetak", FlatButton.Kind.NEUTRAL);
         printButton.addActionListener(e -> printTable());
+        actions.add(previousPageButton);
+        actions.add(nextPageButton);
         actions.add(reloadButton);
         actions.add(exportButton);
         actions.add(printButton);
@@ -245,53 +270,99 @@ class DataTablePanel extends JPanel implements Refreshable {
 
     // ------------------------------------------------------------------ data
 
+    private void searchChanged() {
+        if (pagedRequest == null) {
+            applyFilter();
+        } else {
+            searchTimer.restart();
+        }
+    }
+
+    private void changePage(int offset) {
+        if (pagedRequest == null || loading || offset < 0 || offset > 1000000) {
+            return;
+        }
+        pageOffset = offset;
+        refresh();
+    }
+
     @Override
     public void refresh() {
         if (loading) {
+            refreshPending = true;
             return;
         }
         loading = true;
+        refreshPending = false;
         reloadButton.setEnabled(false);
+        previousPageButton.setEnabled(false);
+        nextPageButton.setEnabled(false);
         setStatus("Memuat data...", false);
+        final int requestedOffset = pageOffset;
+        final String requestedSearch = search.getText().trim();
 
-<<<<<<< HEAD
         new SwingWorker<TableData, Void>() {
             @Override
             protected TableData doInBackground() throws Exception {
-                Object response = request.execute();
-                return new TableData(ApiData.rows(response), ApiData.findInteger(response, "unreadCount"));
-=======
-        new SwingWorker<List<Map<String, Object>>, Void>() {
-            @Override
-            protected List<Map<String, Object>> doInBackground() throws Exception {
-                return ApiData.rows(api.get(endpoint));
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
+                Object response = pagedRequest == null
+                        ? request.execute()
+                        : pagedRequest.execute(PAGE_SIZE, requestedOffset, requestedSearch);
+                List<Map<String, Object>> resultRows = ApiData.rows(response);
+                Map<String, Object> pagination = ApiData.findMap(response, "pagination");
+                Object more = pagination.get("hasMore");
+                boolean resultHasMore = more instanceof Boolean
+                        ? (Boolean) more : resultRows.size() == PAGE_SIZE;
+                return new TableData(resultRows, ApiData.findInteger(response, "unreadCount"), resultHasMore);
             }
 
             @Override
             protected void done() {
                 loading = false;
                 reloadButton.setEnabled(true);
+                boolean reloadAfter = refreshPending;
+                refreshPending = false;
                 try {
-<<<<<<< HEAD
                     TableData result = get();
-                    setRows(result.rows);
-                    String count = rows.size() + " data";
-                    if (result.unreadCount != null) {
-                        count += "  |  " + result.unreadCount + " belum dibaca";
+                    boolean requestIsStale = pagedRequest != null
+                            && (requestedOffset != pageOffset
+                                    || !requestedSearch.equals(search.getText().trim()));
+                    if (requestIsStale) {
+                        reloadAfter = true;
+                    } else {
+                        setRows(result.rows);
+                        hasMore = result.hasMore;
+                        previousPageButton.setEnabled(pagedRequest != null && pageOffset > 0);
+                        nextPageButton.setEnabled(pagedRequest != null && hasMore);
+                        String count = rows.size() + " data";
+                        if (pagedRequest != null) {
+                            count += "  |  halaman " + (pageOffset / PAGE_SIZE + 1);
+                        }
+                        if (result.unreadCount != null) {
+                            count += "  |  " + result.unreadCount + " belum dibaca";
+                        }
+                        setStatus(count + "  |  diperbarui "
+                                + new SimpleDateFormat("HH:mm:ss").format(new Date()), false);
                     }
-                    setStatus(count + "  |  diperbarui "
-=======
-                    setRows(get());
-                    setStatus(rows.size() + " data  |  diperbarui "
->>>>>>> 9fe82a518bd566df9b821f2aa3578b7c2ce07d4b
-                            + new SimpleDateFormat("HH:mm:ss").format(new Date()), false);
                 } catch (ExecutionException ex) {
-                    setRows(new ArrayList<Map<String, Object>>());
-                    setStatus(errorText(ex.getCause()), true);
-                    handleSessionError(ex.getCause());
+                    if (pagedRequest != null
+                            && (requestedOffset != pageOffset
+                                    || !requestedSearch.equals(search.getText().trim()))) {
+                        reloadAfter = true;
+                    } else {
+                        setRows(new ArrayList<Map<String, Object>>());
+                        hasMore = false;
+                        previousPageButton.setEnabled(false);
+                        nextPageButton.setEnabled(false);
+                        setStatus(errorText(ex.getCause()), true);
+                        handleSessionError(ex.getCause());
+                    }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
+                }
+                if (reloadAfter || refreshPending) {
+                    searchTimer.stop();
+                    refreshPending = false;
+                    refresh();
                 }
             }
         }.execute();
@@ -463,10 +534,14 @@ class DataTablePanel extends JPanel implements Refreshable {
 
     /** POST di latar belakang. onSuccess dijalankan di EDT bila berhasil. */
     protected final void postAsync(String path, Object body, Runnable onSuccess) {
+        requestAsync(() -> api.post(path, body), onSuccess);
+    }
+
+    protected final void requestAsync(ApiRequest request, Runnable onSuccess) {
         new SwingWorker<Object, Void>() {
             @Override
             protected Object doInBackground() throws Exception {
-                return api.post(path, body);
+                return request.execute();
             }
 
             @Override

@@ -10,20 +10,21 @@
 
 ## 1. Keputusan
 
-**Desktop dibuat sebagai aplikasi admin untuk pengurus (Bendahara, Ketua RT/RW, Admin), berupa aplikasi Java Swing yang menjadi klien REST API.**
+**Desktop dibuat sebagai aplikasi Java Swing yang menjadi klien REST API untuk pengurus dan warga, dengan fitur yang dibatasi oleh izin backend.**
 
 Dasarnya adalah arsitektur yang sudah disepakati tim:
 
 - Desktop memakai **Java Swing**, berkomunikasi lewat **REST API (JSON)** ke Backend PHP Native, tanpa framework.
 - Hanya backend yang mengakses MySQL. Desktop **tidak punya database atau logika bisnis sendiri**.
-- Warga dilayani Mobile dan Web. Desktop tidak untuk warga.
+- Warga tetap dilayani Mobile dan Web; desktop juga dapat dipakai untuk alur warga yang tersedia melalui API, seperti pengajuan surat.
+- Desktop tidak mengasumsikan izin berdasarkan peran saja. Menu disaring dari `user.permissions` dan backend tetap memvalidasi setiap request.
 
 ## 2. Mengapa aplikasi admin, bukan "cukup web responsif"
 
 | Pertimbangan | Penjelasan |
 |---|---|
 | Kebutuhan platform | Tujuan tugas besar adalah memahami aplikasi multiplatform. Arsitektur tim sudah menetapkan tiga aplikasi: Web, Mobile, Desktop |
-| Pekerjaan pengurus | Bendahara dan pengurus bekerja di laptop/PC dengan tabel lebar: verifikasi pembayaran, rekap tagihan, data warga, laporan |
+| Kebutuhan pengguna | Warga dan pengurus dapat memakai desktop untuk alur yang tersedia di API; tabel mendukung pencarian, pengurutan, ekspor CSV, dan cetak |
 | Nilai tambah desktop | Tabel yang bisa dicari dan diurutkan, ekspor CSV untuk Excel, cetak langsung, jendela sendiri tanpa browser |
 | Risiko | Kecil: tidak ada aturan bisnis yang ditulis dua kali, semua lewat API yang sama |
 
@@ -35,10 +36,10 @@ Peran menurut Daftar Fitur F-003: Super Admin, Admin Perumahan, Ketua RT/RW, Ben
 
 | Peran | Memakai desktop? | Keterangan |
 |---|---|---|
-| Bendahara | Ya | Verifikasi pembayaran, tagihan, kas, laporan |
-| Ketua RT/RW, Pengurus | Ya | Data warga, pengumuman, laporan |
+| Bendahara | Ya, sesuai izin API | Tagihan, pembayaran baca-saja, kas, ringkasan |
+| Ketua RT/RW, Pengurus | Ya, sesuai izin API | Data warga, pengumuman, dan persetujuan surat/akun bila berhak |
 | Admin Perumahan, Super Admin | Ya | Pengelolaan data dan platform |
-| Warga | Tidak | Memakai Mobile. Desktop menolak login peran ini (dapat diubah lewat `desktop.blocked.roles`) |
+| Warga | Ya, terbatas | Pengajuan dan status surat, data milik sendiri, dan fitur lain hanya bila backend memberi izin |
 
 ## 4. Cakupan fitur desktop
 
@@ -46,30 +47,28 @@ Dipetakan dari Daftar Fitur (F-001 sampai F-027). Status: **Selesai** (sudah ada
 
 | Fitur | Status | Catatan |
 |---|---|---|
-| Login, sesi | Selesai | `POST /api/login`, kembali ke login bila sesi berakhir |
-| Dashboard statistik (F-015) | Selesai (ringkas) | Jumlah warga, tagihan lunas/belum, persentase. Grafik interaktif tahap berikut |
-| Data warga dan KK (F-004) | Selesai | Daftar, cari, tambah |
-| Tagihan (F-009) | Selesai | Daftar dan status berwarna |
-| Verifikasi bukti pembayaran (F-010, F-011) | Selesai | Terima/tolak dengan catatan |
-| Pengumuman (F-017) | Selesai | Daftar. Buat pengumuman tahap berikut |
-| Laporan (F-016) | Selesai | Daftar, ekspor CSV, cetak. PDF dan XLSX asli perlu library |
+| Login, sesi | Selesai | `/api/v1/auth/*`, Bearer token dan cookie; menu mengikuti izin |
+| Dashboard statistik (F-015) | Selesai (ringkas) | Ringkasan dari `GET /api/v1/dashboard/summary` |
+| Data warga dan KK (F-004) | Selesai sesuai izin | Tambah/ubah keluarga dan warga; arsipkan bila tidak memiliki data terkait |
+| Tagihan (F-009) | Selesai sesuai izin | Tambah/ubah dan batalkan tagihan; tagihan dengan riwayat pembayaran dilindungi |
+| Pembayaran (F-010, F-011) | Selesai sesuai izin | Pengurus berwenang dapat menyetujui/menolak pembayaran |
+| Pengumuman (F-017) | Selesai sesuai izin | Tambah/ubah/arsipkan; cakupan publikasi mengikuti wilayah dan izin |
+| Kegiatan | Selesai sesuai izin | Tambah/ubah/arsipkan kegiatan pada organisasi/wilayah yang diizinkan |
+| Laporan (F-016) | Selesai | Ekspor XLSX dan cetak melalui dialog sistem; PDF tersedia bila OS menyediakan printer PDF |
 | Tema terang/gelap (F-027) | Selesai | |
-| Mutasi warga (F-005) | Tahap berikut | Cukup satu halaman daftar |
-| Verifikasi surat (F-007) | Tahap berikut | Daftar pengajuan, setujui/tolak |
-| Aturan iuran (F-008), kas (F-013), riwayat dan kuitansi (F-012) | Tahap berikut | Halaman daftar, lalu form |
-| Verifikasi akun (F-002), peran (F-003) | Tahap berikut | |
-| Audit log (F-023), sesi (F-024), multi-RT/RW (F-025), backup (F-026) | Tahap berikut | Untuk Admin dan Super Admin |
-| Registrasi warga (F-001), pengajuan surat (F-006), survei (F-022), kegiatan (F-019), kontak darurat (F-021), pengingat (F-014) | Di luar desktop | Sisi warga, dilayani Mobile |
+| Mutasi, kategori iuran, kas, survei, pengaduan, kontak darurat, pengguna, wilayah, pengaturan, audit log, backup | Baca-saja | Daftar hanya ditampilkan jika izin resource tersedia |
+| Verifikasi akun (F-002) | Selesai | Pengurus yang berhak dapat meninjau dan menyetujui pendaftaran |
+| Pengajuan surat (F-006) | Selesai | Warga dengan izin dan profil aktif dapat mengajukan surat |
+| Verifikasi surat (F-007) | Selesai | Pengurus dengan izin dapat menyetujui/menolak pengajuan |
+| CRUD, verifikasi pembayaran, publikasi/pengubahan data, dan laporan PDF/XLSX | Selesai | Endpoint operasi backend dan aksi desktop tersedia dengan pemeriksaan izin server |
 
 Halaman daftar baru hanya butuh sekitar lima baris kode (lihat README bagian "Menambah halaman baru").
 
 ## 5. Hal yang perlu dikonfirmasi ke Project Leader (Dimas)
 
-1. **Kontrak API** di `documentation/API/`: bentuk respons, cara login (token Bearer atau session cookie), nama kolom body login, nama endpoint selain contoh (`GET /api/payments`, dst.). Daftar asumsi desktop ada di README.
-2. **Peran dan wilayah** dalam respons login (`user.peran`), agar desktop dapat menampilkan peran dan menolak warga.
-3. **Form tambah warga**: daftar kolom yang diterima `POST /api/residents`.
-4. **CORS tidak diperlukan** untuk desktop (bukan browser), tetapi **HTTPS** wajib saat rilis (RT-033).
-5. **Persetujuan library** bila ingin PDF/XLSX asli atau tema FlatLaf. Sementara aplikasi hanya memakai JDK.
+1. Verifikasi role dan permission pada seed/database serta lakukan uji integrasi dengan backend dan MySQL aktif; desktop hanya memakai izin untuk menampilkan aksi, backend tetap menegakkan akses.
+2. **CORS tidak diperlukan** untuk desktop (bukan browser), tetapi **HTTPS** wajib saat rilis (RT-033).
+3. Ekspor XLSX dibuat tanpa library tambahan; PDF menggunakan dialog cetak sistem dan bergantung pada printer PDF yang tersedia.
 
 Untuk tim UI/UX (Alam): desain desktop yang tersedia di `documentation/UI-UX` berupa draf tampilan admin lebar. Implementasi desktop mengikuti warna (hijau pinus dengan aksen kuning), sidebar kiri, dan status berwarna. Form tambah/ubah dan halaman detail belum didesain. Perlu desainnya sebelum dikerjakan.
 

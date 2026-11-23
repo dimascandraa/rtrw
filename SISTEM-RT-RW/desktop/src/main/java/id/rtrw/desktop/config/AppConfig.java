@@ -67,15 +67,15 @@ public final class AppConfig {
         }
     }
 
-    /** Nama kolom untuk email/telepon pada body POST /api/login. */
+    /** Nama kolom untuk email/telepon pada body POST /api/v1/auth/login. */
     public String loginField() {
-        return props.getProperty("api.login.field", "email").trim();
+        return props.getProperty("api.login.field", "identity").trim();
     }
 
-    /** Peran yang diarahkan ke aplikasi Mobile dan tidak boleh memakai desktop. */
+    /** Peran opsional yang tidak diizinkan menggunakan desktop. */
     public Set<String> blockedRoles() {
         Set<String> roles = new HashSet<>();
-        for (String r : props.getProperty("desktop.blocked.roles", "warga").split(",")) {
+        for (String r : props.getProperty("desktop.blocked.roles", "").split(",")) {
             if (!r.trim().isEmpty()) {
                 roles.add(r.trim().toLowerCase(Locale.ROOT));
             }
@@ -87,15 +87,12 @@ public final class AppConfig {
         return role != null && blockedRoles().contains(role.trim().toLowerCase(Locale.ROOT));
     }
 
-    public boolean save() {
+    public void save() throws IOException {
         if (file == null) {
-            return false;
+            throw new IOException("Berkas konfigurasi tidak tersedia.");
         }
         try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             props.store(writer, "Konfigurasi Aplikasi RT/RW Desktop. Jangan simpan password atau token di sini.");
-            return true;
-        } catch (IOException e) {
-            return false;
         }
     }
 }

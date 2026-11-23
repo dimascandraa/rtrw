@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -29,7 +28,7 @@ public final class FlatButton extends JButton {
         setFocusPainted(false);
         setOpaque(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        setFont(getFont().deriveFont(Font.BOLD, 13f));
+        setFont(Theme.font(13f, true));
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -76,7 +75,7 @@ public final class FlatButton extends JButton {
             fg = Theme.muted();
         } else if (kind == Kind.PRIMARY) {
             fill = hover ? mix(Theme.primary(), Color.WHITE, 0.14f) : Theme.primary();
-            fg = Color.WHITE;
+            fg = Theme.primaryText();
         } else if (kind == Kind.DANGER) {
             fill = hover ? mix(Theme.danger(), Color.WHITE, 0.14f) : Theme.danger();
             fg = Color.WHITE;

@@ -77,6 +77,10 @@ public final class ApiData {
                     return ((String) v).trim();
                 }
             }
+            Object error = map.get("error");
+            if (error instanceof Map) {
+                return message(error);
+            }
         }
         return null;
     }
@@ -135,6 +139,27 @@ public final class ApiData {
             }
         }
         return null;
+    }
+
+    /** Membaca angka dari respons atau objek di dalam "data". */
+    public static Integer findInteger(Object json, String key) {
+        if (!(json instanceof Map)) {
+            return null;
+        }
+        Map<?, ?> map = (Map<?, ?>) json;
+        Object value = map.get(key);
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        if (value instanceof String) {
+            try {
+                return Integer.valueOf((String) value);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        Object data = map.get("data");
+        return data instanceof Map ? findInteger(data, key) : null;
     }
 
     /** Teks yang ditampilkan di tabel untuk sebuah nilai JSON. */

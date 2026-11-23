@@ -1,6 +1,6 @@
 # Aplikasi Desktop: Sistem Informasi RT/RW
 
-Aplikasi desktop **Java Swing** untuk pengurus RT/RW (Bendahara, Ketua RT/RW, Admin). Aplikasi ini hanya **klien REST API**: semua data dan aturan bisnis ada di Backend PHP Native, dan hanya backend yang mengakses MySQL.
+Aplikasi desktop **Java Swing** untuk warga dan pengurus RT/RW. Fitur yang ditampilkan mengikuti izin dari backend; semua data dan aturan bisnis tetap berada di Backend PHP Native, dan hanya backend yang mengakses MySQL.
 
 ```
 Web (HTML, CSS, JS) ─┐
@@ -14,69 +14,133 @@ Dokumen keputusan RT-026: [`docs/RT-026-kebutuhan-desktop.md`](docs/RT-026-kebut
 
 ## Persyaratan
 
-- **JDK 11 atau lebih baru** (kode dikompilasi dengan `--release 11`, sudah dicoba di JDK 21)
-- Backend API berjalan, **atau** pakai API tiruan di bawah ini
+- **JDK 11 atau lebih baru** (JDK lengkap, termasuk `javac` dan `jar`; sudah diuji dengan JDK 23).
+- Backend API yang sudah berjalan, atau API tiruan lokal untuk mencoba aplikasi tanpa backend/MySQL.
 
-## Mulai cepat (tanpa backend)
+## Menjalankan di Windows (PowerShell)
 
-```bash
-./mock-server.sh      # terminal 1: API tiruan di http://127.0.0.1:8000 (data dummy)
-./run.sh              # terminal 2: jalankan aplikasi (build otomatis bila perlu)
+Cara ini menjalankan aplikasi beserta API tiruan berisi data contoh. Tidak perlu menyalakan PHP atau MySQL.
+
+1. Pastikan JDK terpasang. Buka PowerShell dan jalankan:
+
+   ```powershell
+   java -version
+   javac -version
+   jar --version
+   ```
+
+   Semua perintah harus dikenali. Versi Java harus 11 atau lebih baru.
+
+2. Jalankan API tiruan di terminal PowerShell pertama:
+
+   ```powershell
+   Set-Location -LiteralPath 'C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop'
+   .\mock-server.bat
+   ```
+
+   Tunggu sampai muncul `Mock API berjalan di http://127.0.0.1:8000`. Biarkan terminal ini tetap terbuka.
+
+   Jika proyek berada di lokasi lain, ganti alamat pada `Set-Location` dengan lokasi folder `desktop` Anda.
+
+3. Buka terminal PowerShell kedua dan jalankan aplikasi:
+
+   ```powershell
+   Set-Location -LiteralPath 'C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop'
+   .\build.bat
+   .\run.bat
+   ```
+
+   Tunggu sampai `build.bat` menampilkan `Selesai: out\rtrw-desktop.jar`. Saat jendela login terbuka, alamat API tiruan sudah terisi. Jika perlu mengubahnya, pilih **Ubah alamat server** di bawah formulir. Akun demo tersedia:
+
+   - **Alamat server:** `http://127.0.0.1:8000`
+   - **Admin RW:** `admin@rtrw.test` / `admin123`
+   - **Warga:** `warga@rtrw.test` / `warga123` (termasuk pengajuan surat online)
+
+   `run.bat` akan membangun JAR otomatis jika belum ada. Menjalankan `build.bat` secara eksplisit di atas membantu memastikan JAR terbaru berhasil dibuat.
+
+4. Untuk berhenti, tutup aplikasi desktop, lalu tekan `Ctrl+C` pada terminal API tiruan.
+
+API tiruan hanya menggunakan data dummy dalam memori. Perubahan data akan hilang saat server dihentikan.
+
+### Jika tidak menggunakan PowerShell
+
+Di Command Prompt, buka dua jendela dan jalankan perintah berikut pada masing-masing:
+
+```bat
+cd /d C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop
+mock-server.bat
 ```
 
-Di Windows: `mock-server.bat` lalu `run.bat` (skrip `.bat` belum dicoba di Windows, mohon dilaporkan bila ada masalah).
+```bat
+cd /d C:\TicTacToe\rtrw\SISTEM-RT-RW\desktop
+build.bat
+run.bat
+```
 
-Akun uji: `admin@rtrw.test` / `admin123` (peran Bendahara). Akun `warga@rtrw.test` / `warga123` sengaja ditolak karena warga memakai aplikasi Mobile.
+Ganti lokasi folder jika proyek tidak berada di `C:\TicTacToe\rtrw\SISTEM-RT-RW`.
 
-## Menghubungkan ke backend sebenarnya
+### Menjalankan dengan backend sendiri
 
-1. Isi **Alamat server** di halaman login (misalnya `http://localhost:8000`). Alamat tersimpan otomatis ke `config.properties`.
-2. Atau salin `config.properties.example` menjadi `config.properties` dan ubah isinya. Argumen `--url=...` juga bisa dipakai: `./run.sh --url=https://rtrw.example.com`.
+Jalankan backend sesuai dokumentasinya, lalu buka aplikasi dari folder `desktop`:
 
-`config.properties` tidak ikut di-commit. Jangan simpan password atau token di sana. Token hanya disimpan di memori selama aplikasi berjalan.
+```powershell
+.\run.bat --url=http://localhost:8000
+```
+
+Ganti URL dengan alamat backend yang benar. Alternatifnya, buka aplikasi tanpa argumen, pilih **Ubah alamat server** di halaman login, lalu isi URL tersebut. URL yang digunakan akan disimpan untuk pemakaian berikutnya. Untuk server produksi, gunakan HTTPS.
+
+### Mengatasi masalah saat menjalankan
+
+| Pesan atau masalah | Yang perlu dilakukan |
+|---|---|
+| VS Code menampilkan `debugjava.ps1 cannot be loaded because running scripts is disabled` | Ini kebijakan PowerShell yang memblokir skrip debugger Java VS Code, bukan error dari aplikasi. Untuk mencoba desktop, jalankan `run.bat` dari Command Prompt sesuai langkah di atas. Jangan mengubah execution policy seluruh komputer tanpa persetujuan administrator. |
+| `java`, `javac`, atau `jar` tidak dikenali | Pasang JDK 11+ (bukan hanya JRE), tambahkan folder `bin` JDK ke `PATH`, tutup lalu buka kembali terminal, dan ulangi pemeriksaan versi. |
+| Build menampilkan error `javac` | Pastikan terminal berada di folder `desktop`, gunakan JDK 11+, lalu jalankan `.\build.bat` lagi. Baca error `javac` pertama; jika masih gagal, salin seluruh output terminal untuk diperiksa. |
+| `Unable to access jarfile` atau `Could not find or load main class` | Build mungkin belum berhasil. Jalankan `.\build.bat` dan pastikan ada pesan `Selesai: out\rtrw-desktop.jar` sebelum menjalankan `.\run.bat`. |
+| `Address already in use` saat menjalankan API tiruan | Port 8000 sedang dipakai. Jalankan `.\mock-server.bat 8001`, lalu gunakan alamat `http://127.0.0.1:8001` di halaman login. |
+| Aplikasi menampilkan tidak dapat terhubung ke server | Pastikan terminal API tiruan masih terbuka dan alamat/port di halaman login sama dengan alamat yang dicetak oleh server. |
+| Login ditolak | Untuk API tiruan, gunakan salah satu akun demo yang tertera di atas. Untuk backend sendiri, akun harus aktif dan memiliki penugasan wilayah. |
+| JAR tidak dapat ditulis karena sedang digunakan | Tutup semua jendela aplikasi desktop yang berjalan, kemudian jalankan ulang `.\build.bat`. |
+
+Jika masih gagal, kirimkan **pesan error lengkap dari terminal** dan sebutkan perintah terakhir yang dijalankan. Jangan kirim kata sandi atau token backend.
 
 ## Perintah
 
-| Perintah | Fungsi |
-|---|---|
-| `./build.sh` | Kompilasi dan buat `out/rtrw-desktop.jar` |
-| `./run.sh` | Jalankan aplikasi |
-| `./test.sh` | Jalankan 27 pengujian otomatis (JSON, parser respons, klien API vs API tiruan) |
-| `./mock-server.sh [port]` | Jalankan API tiruan |
+| Windows | Linux/macOS | Fungsi |
+|---|---|---|
+| `build.bat` | `./build.sh` | Kompilasi dan buat `out/rtrw-desktop.jar` |
+| `run.bat` | `./run.sh` | Jalankan aplikasi |
+| `test.bat` | `./test.sh` | Jalankan pengujian otomatis |
+| `mock-server.bat [port]` | `./mock-server.sh [port]` | Jalankan API tiruan (port bawaan 8000) |
 
 ## Fitur saat ini
 
 | Menu | Endpoint | Fungsi | Fitur di Daftar Fitur |
 |---|---|---|---|
-| Login | `POST /api/login` | Masuk, token dan cookie sesi dibaca otomatis | (akses) |
-| Beranda | `GET /api/residents`, `GET /api/invoices` | Jumlah warga, tagihan lunas/belum, persentase pelunasan | F-015 (versi ringkas) |
-| Data Warga | `GET`, `POST /api/residents` | Daftar, cari, tambah warga | F-004 |
-| Tagihan | `GET /api/invoices` | Daftar tagihan dan status | F-009 |
-| Pembayaran | `GET /api/payments`, `POST /api/payments/verify` | Daftar dan verifikasi (terima/tolak) oleh bendahara | F-010, F-011 |
-| Pengumuman | `GET /api/announcements` | Daftar pengumuman | F-017 |
-| Laporan | `GET /api/reports` | Daftar laporan | F-016 |
-| Semua tabel | - | Cari, urutkan kolom, **Ekspor CSV** (terbaca di Excel), **Cetak**, detail baris (klik dua kali) | F-016 |
+| Koneksi | `GET /api/v1/health` | Memeriksa konektivitas API dan database | (internal) |
+| Login dan sesi | `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, `POST /api/v1/auth/logout` | Masuk dengan token native dan cookie sesi, memuat profil, lalu mencabut sesi saat keluar | (akses) |
+| Beranda dan navigasi modul | - | Beranda hanya menampilkan modul/fitur yang sesuai izin akun; setiap modul memiliki halaman katalog | Navigasi UI/UX |
+| Dashboard statistik | `GET /api/v1/dashboard/summary` | Statistik warga dan tagihan dari ringkasan backend | F-015 (versi ringkas) |
+| Pengumuman | `GET /api/v1/announcements?limit=50` | Daftar pengumuman sesuai wilayah dan hak akses pengguna | F-017 |
+| Notifikasi | `GET /api/v1/notifications?limit=50` | Daftar notifikasi pengguna dan jumlah yang belum dibaca | Komunikasi |
+| Data operasional | `GET /api/v1/resources/{resource}` | Membaca daftar resource sesuai peran dan wilayah akun, termasuk warga, tagihan, pembayaran, kegiatan, pengaduan, serta pengaturan | Beragam |
+| Registrasi akun | `POST /api/v1/auth/register` | Formulir publik pada halaman login mengirim pendaftaran akun warga untuk ditinjau pengurus | Akses |
+| Persetujuan pendaftaran | `GET /api/v1/registrations/pending`, `POST /api/v1/registrations/{id}/approve` | Melihat dan menyetujui pendaftaran yang dapat ditinjau akun | Akses |
+| Pengajuan surat online | `GET /api/v1/resources/jenis-surat`, `POST /api/v1/letters` | Nama pemohon mengikuti akun warga yang masuk; warga memilih jenis surat aktif dan mengirim keperluan | Administrasi |
+| Persetujuan surat | `GET /api/v1/resources/pengajuan-surat`, `POST /api/v1/letters/{id}/decision` | Meninjau pengajuan dan mengirim keputusan setuju/tolak beserta catatan | Administrasi |
+| Profil dan keamanan | `PATCH /api/v1/auth/profile`, `POST /api/v1/auth/password` | Memperbarui profil sendiri atau mengganti kata sandi dengan verifikasi kata sandi saat ini | Akses |
+| Semua tabel | - | Cari, pagination server, urutkan kolom, **Ekspor CSV** halaman aktif, **Cetak**, detail baris (klik dua kali) | F-016 |
 | Tema | - | Mode terang/gelap, pilihan diingat | F-027 |
 
 Status berwarna mengikuti desain UI/UX: hijau (selesai), kuning (menunggu), merah (ditolak/menunggak). Sesi yang berakhir (HTTP 401) otomatis kembali ke halaman login.
 
-Belum ada (bisa ditambah, lihat bagian "Menambah halaman"): mutasi warga, surat, kas, kategori iuran, audit log, sesi/perangkat, multi-RT/RW, backup, notifikasi, kegiatan, pengaduan, kontak darurat, survei. Ekspor PDF dan XLSX asli membutuhkan library, jadi sementara memakai CSV dan cetak. Ini perlu persetujuan tim dan dosen bila ingin ditambah.
+Menu dan kartu katalog difilter menggunakan `user.permissions` dan `roleCode` dari backend; backend tetap memeriksa setiap permintaan. Desktop menyediakan registrasi publik, pengajuan surat untuk Warga, persetujuan pendaftaran/surat dan pembayaran untuk pengurus, pengelolaan keluarga/warga/tagihan/pengumuman/kegiatan sesuai izin, ekspor laporan XLSX, serta cetak laporan melalui dialog sistem (termasuk printer PDF bila tersedia). Backend tetap menjadi sumber kebenaran untuk validasi, wilayah, dan izin.
 
-## Asumsi kontrak API (WAJIB dicocokkan dengan Dimas)
+## Kontrak API desktop
 
-`documentation/API/` belum saya lihat, jadi bagian berikut adalah **asumsi**. Semuanya terpusat sehingga mudah diubah.
+Desktop memakai prefix `/api/v1`. Login mengirim `client: "desktop"` dan menyimpan `accessToken` sebagai `Authorization: Bearer ...`; cookie sesi PHP juga disimpan otomatis. Endpoint selain health, login, dan registrasi memerlukan sesi yang sesuai. Backend membatasi resource berdasarkan peran dan wilayah, dan menjadi sumber kebenaran untuk seluruh izin.
 
-| Asumsi | Lokasi perubahan |
-|---|---|
-| Respons berbentuk `{"success":true,"message":"...","data":[...]}`. Daftar boleh di akar, di `data`, atau di `data.items`. Kegagalan: `{"success":false,"message":"..."}` atau HTTP 4xx/5xx | `api/ApiData.java` |
-| Login: body `{"email": "...", "password": "..."}` (nama kolom di `api.login.field`). Respons memuat `token` dan `user` (di akar atau di `data`) | `ApiClient.login`, `config.properties` |
-| Token dikirim sebagai `Authorization: Bearer <token>`. Cookie sesi PHP juga disimpan otomatis | `api/ApiClient.java` |
-| Peran dibaca dari `user.peran` / `role` / `nama_peran`; peran `warga` ditolak | `ApiClient.userRole`, `desktop.blocked.roles` |
-| `GET /api/payments` ada (daftar pembayaran); `GET /api/announcements` dan `GET /api/reports` mengembalikan daftar | `ui/MainFrame.java` |
-| Verifikasi: `POST /api/payments/verify` body `{"id":..., "status":"diterima"\|"ditolak", "catatan":"..."}` | `ui/PaymentsPanel.java` |
-| Tambah warga: body `{nik, nama, no_kk, alamat, telepon}` | `FORM_FIELDS` di `ui/ResidentsPanel.java` |
-| Status tagihan lunas = kolom berisi kata "status" yang memuat "lunas" tanpa "belum" | `DashboardPanel.isPaid` |
-| Kolom tabel dibuat otomatis dari kunci JSON; kunci berisi `password`, `token`, `hash`, `secret` disembunyikan | `DataTablePanel` |
+Respons sukses menggunakan pembungkus `data`; daftar ditampilkan dari `data.items`. Body profil menggunakan `name`, `email`, dan `phone`; kata sandi menggunakan `currentPassword` dan `newPassword`; pengajuan surat menggunakan `jenisSuratId` dan `keperluan`; keputusan surat menggunakan `keputusan` (`setuju`/`tolak`) dan `catatan`. Daftar endpoint lengkap ada di [`../documentation/API/README.md`](../documentation/API/README.md). HTTP 401 mengarahkan pengguna kembali ke login, sedangkan HTTP 403 ditampilkan sebagai penolakan akses dari backend.
 
 ## Struktur
 
@@ -87,7 +151,8 @@ desktop/
 │   ├── api/       Json, ApiClient, ApiData, ApiException
 │   ├── config/    AppConfig (config.properties)
 │   ├── ui/        LoginFrame, MainFrame, DashboardPanel, DataTablePanel,
-│   │              ResidentsPanel, PaymentsPanel, Theme, FlatButton, UiKit
+│   │              RegistrationApprovalPanel, LetterDecisionPanel,
+│   │              AccountRegistrationPanel, AccountSettingsPanel, Theme, FlatButton, UiKit
 │   └── util/      CsvExporter
 ├── src/dev/java/…/dev/MockServer.java     API tiruan (hanya untuk pengembangan)
 ├── src/test/java/…/TestRunner.java        pengujian tanpa framework
@@ -98,18 +163,19 @@ desktop/
 
 ## Menambah halaman baru
 
-Halaman daftar baru cukup dua baris di `ui/MainFrame.java`:
+Halaman daftar resource baru dapat memakai klien dan tabel generik yang ada di `ui/MainFrame.java`:
 
 1. Tambahkan menu di blok `static`: `MENU.put("kas", "Kas");`
 2. Tambahkan `case` di `page(...)`:
 
 ```java
 case "kas":
-    page = new DataTablePanel(api, "Kas", "Kas masuk dan pengeluaran.", "/api/cash", this);
+    page = new DataTablePanel(api, "Kas", "Kas masuk dan pengeluaran.",
+            () -> api.resource("transaksi-kas"), this);
     break;
 ```
 
-Kolom tabel, pencarian, ekspor CSV, cetak, dan penanganan sesi sudah otomatis. Untuk aksi khusus (tambah/ubah/verifikasi), turunkan `DataTablePanel` seperti `ResidentsPanel` dan `PaymentsPanel`, lalu tambahkan tombol dengan `addAction(...)` dan kirim data dengan `postAsync(...)`.
+Kolom tabel, pencarian, ekspor CSV, cetak, dan penanganan sesi sudah otomatis. Tambahkan aksi tulis hanya jika endpoint tersedia di kontrak backend; tangani error HTTP tanpa menganggap penolakan akses sebagai daftar kosong.
 
 ## Membuat paket aplikasi (RT-027)
 

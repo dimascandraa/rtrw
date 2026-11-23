@@ -99,10 +99,11 @@ Berhenti menjalankan server dengan menekan `Ctrl+C` pada terminal.
 
 ### Menjalankan Desktop
 
-Pastikan backend sudah berjalan di `http://127.0.0.1:8000`, lalu jalankan JAR yang sudah tersedia:
+Pastikan backend sudah berjalan di `http://127.0.0.1:8000`. Source Java dan skrip build tersedia di folder `desktop`:
 
 ```powershell
-cd D:\Dimas\Kuliah\Semester 5\Pemrograman Berbasis Platform\rtrw\SISTEM-RT-RW\desktop
+cd desktop
+.\build.bat
 java -jar out\rtrw-desktop.jar
 ```
 
@@ -112,7 +113,7 @@ Alamat backend Desktop diatur pada `desktop\config.properties`:
 api.base.url=http://127.0.0.1:8000
 ```
 
-Folder `desktop\out` berisi hasil build Desktop yang siap dijalankan. Folder `desktop\src` belum tersedia di repository saat ini; JAR dapat dijalankan bila Java sudah terpasang, tetapi pengembangan ulang atau build dari source memerlukan source Java dan skrip build yang lengkap.
+Panduan pengujian API tiruan dan konfigurasi desktop selengkapnya ada di [`desktop/README.md`](desktop/README.md).
 
 ### Menjalankan Mobile
 

@@ -8,9 +8,9 @@ Semua aplikasi (web, mobile, dan desktop) menggunakan backend yang sama. Backend
 - Format request dan response: JSON UTF-8
 - Sukses: `{ "data": ... }`
 - Gagal: `{ "error": { "code": "...", "message": "..." } }`
-- Endpoint data memerlukan sesi aktif kecuali `GET /health` dan `POST /auth/login`.
+- Endpoint memerlukan sesi aktif kecuali `GET /health`, `POST /auth/login`, dan `POST /auth/register`.
 - Resource list memakai `limit` (default 50, maksimum 100), `offset` (default 0), dan `search` (maksimum 100 karakter).
-- Respons list: `{ "data": { "items": [...], "pagination": { "limit": 50, "offset": 0 } } }`
+- Respons list: `{ "data": { "items": [...], "pagination": { "limit": 50, "offset": 0, "hasMore": true } } }`
 
 ## Autentikasi lintas platform
 
@@ -52,12 +52,30 @@ Respons login dan `GET /auth/me` menyertakan daftar `user.permissions` dan `user
 | `POST` | `/registrations/{id}/approve` | Menyetujui pendaftaran sebagai Warga |
 | `POST` | `/letters` | Mengirim pengajuan surat warga |
 | `POST` | `/letters/{id}/decision` | Menyetujui atau menolak surat sesuai wilayah |
+| `POST` | `/families` | Membuat data keluarga |
+| `PATCH` | `/families/{id}` | Mengubah alamat dan jenis hunian keluarga |
+| `DELETE` | `/families/{id}` | Menghapus keluarga yang belum memiliki warga/tagihan |
+| `POST` | `/residents` | Menambahkan warga ke keluarga dalam wilayah |
+| `PATCH` | `/residents/{id}` | Mengubah profil warga tanpa mengubah NIK |
+| `DELETE` | `/residents/{id}` | Menonaktifkan dan mengarsipkan warga |
+| `POST` | `/invoices` | Membuat tagihan dan rincian kategori |
+| `PATCH` | `/invoices/{id}` | Mengubah tagihan yang belum memiliki riwayat pembayaran |
+| `DELETE` | `/invoices/{id}` | Membatalkan tagihan tanpa menghapus riwayat |
+| `POST` | `/payments/{id}/decision` | Memverifikasi atau menolak pembayaran |
+| `POST` | `/announcements` | Membuat draf atau menerbitkan pengumuman |
+| `PATCH` | `/announcements/{id}` | Mengubah pengumuman sesuai wilayah |
+| `DELETE` | `/announcements/{id}` | Mengarsipkan pengumuman |
+| `POST` | `/activities` | Membuat kegiatan |
+| `PATCH` | `/activities/{id}` | Mengubah kegiatan sesuai wilayah |
+| `DELETE` | `/activities/{id}` | Mengarsipkan kegiatan |
 | `GET` | `/dashboard/summary` | Ringkasan beranda dan aktivitas |
 | `GET` | `/announcements` | Pengumuman sesuai wilayah |
 | `GET` | `/notifications` | Notifikasi pengguna dan jumlah belum dibaca |
 | `GET` | `/resources/warga` | Data warga (tanpa NIK/No. KK) |
+| `GET` | `/resources/keluarga` | Data keluarga untuk pemilihan wilayah/rumah (tanpa No. KK) |
 | `GET` | `/resources/mutasi` | Riwayat mutasi warga |
 | `GET` | `/resources/kategori-iuran` | Kategori iuran |
+| `GET` | `/resources/periode-tagihan` | Periode tagihan yang tersedia |
 | `GET` | `/resources/tagihan` | Tagihan dan status pembayaran |
 | `GET` | `/resources/pembayaran` | Pembayaran dan status verifikasi |
 | `GET` | `/resources/transaksi-kas` | Transaksi kas |
@@ -86,4 +104,10 @@ Pendaftaran menerima `name`, `email` (opsional jika telepon tersedia), `phone`, 
 
 Pengajuan surat menerima `jenisSuratId` dan `keperluan`; warga hanya dapat melihat pengajuan miliknya. Pengurus hanya dapat memutuskan pengajuan dalam organisasi/wilayah yang ditugaskan. Profil menerima `name`, `email`, dan `phone`; penggantian kata sandi menerima `currentPassword` dan `newPassword`.
 
-Setiap resource memiliki izin, batas organisasi/wilayah, dan bentuk data khusus di backend. Akses terbatas yang tidak memiliki filter aman akan mendapat `403 restricted_resource`, bukan daftar global. Ekspor laporan web mengambil data melalui resource API yang sama dan mempertahankan batas akses tersebut.
+Penulisan data memerlukan izin modul/aksi pada `peran_izin_akses` dan selalu dibatasi pada organisasi serta wilayah penugasan. Super Admin tanpa organisasi aktif harus mengirim `organizationId`. Pembuatan keluarga menerima `rtId`, `familyNumber` (16 digit), `address`, `houseNumber`, dan `housingType`. Pembuatan warga menerima `familyId`, `nik` (16 digit), `name`, `sex` (`L`/`P`), serta data profil opsional. NIK tidak dikembalikan oleh resource dan tidak dicatat dalam audit.
+
+Pembuatan tagihan menerima `familyId`, `periodId`, `categoryId`, `amount`, `dueDate` (`YYYY-MM-DD`), dan `description`; periode harus berstatus `terbit`. Keputusan pembayaran menerima `keputusan` (`setuju`/`tolak`) dan `catatan`; keputusan setuju memperbarui total pembayaran tagihan dan kas masuk dalam satu transaksi. Pengumuman menerima `title`, `body`, `rtId` opsional, `publishAt`, dan `expiresAt`; kegiatan menerima `title`, `description`, `type`, `startAt`, `endAt`, `location`, dan `rtId`. Waktu menerima `YYYY-MM-DD HH:MM[:SS]`.
+
+Keluarga yang masih memiliki warga/tagihan tidak dapat dihapus. Warga diarsipkan (bukan dihapus permanen), sedangkan tagihan dibatalkan dan hanya dapat dibatalkan bila belum memiliki pembayaran. Pengumuman/kegiatan menggunakan soft delete. Setiap perubahan bisnis ditulis ke audit log dalam transaksi yang sama.
+
+Setiap resource memiliki izin, batas organisasi/wilayah, dan bentuk data khusus di backend. Akses terbatas yang tidak memiliki filter aman akan mendapat `403 restricted_resource`, bukan daftar global. Ekspor laporan desktop/web mengambil halaman resource `transaksi-kas`, `tagihan`, dan `pembayaran` dengan izin serta batas akses yang sama.

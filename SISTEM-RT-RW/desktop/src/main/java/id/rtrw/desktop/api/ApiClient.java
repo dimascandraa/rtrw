@@ -5,6 +5,7 @@ import id.rtrw.desktop.config.AppConfig;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -31,6 +32,7 @@ public final class ApiClient {
     private HttpClient http;
     private String baseUrl;
     private String token;
+    private boolean authenticated;
     private Map<String, Object> user = Collections.emptyMap();
 
     public ApiClient(AppConfig config) {
@@ -66,27 +68,227 @@ public final class ApiClient {
 
     // ------------------------------------------------------------------ sesi
 
-    /** POST /api/login. Gagal bila kredensial salah atau server tidak terjangkau. */
+    /** GET /api/v1/health. */
+    public Object health() throws ApiException {
+        return get("/api/v1/health");
+    }
+
+    /** POST /api/v1/auth/login. Gagal bila kredensial salah atau server tidak terjangkau. */
     public void login(String identifier, String password) throws ApiException {
         logout();
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(config.loginField(), identifier);
         body.put("password", password);
-        Object response = send("POST", "/api/login", body);
-        this.token = ApiData.findString(response, "token", "access_token", "jwt");
+        body.put("client", "desktop");
+        Object response = send("POST", "/api/v1/auth/login", body);
+        this.token = ApiData.findString(response, "accessToken", "token", "access_token", "jwt");
         this.user = ApiData.findMap(response, "user", "pengguna", "profile");
+        this.authenticated = true;
+    }
+
+    /** POST /api/v1/auth/logout, bila ada sesi aktif. */
+    public void logoutServer() throws ApiException {
+        if (authenticated) {
+            send("POST", "/api/v1/auth/logout", new LinkedHashMap<>());
+        }
+        logout();
     }
 
     /** Menghapus token, data pengguna, dan cookie sesi dari memori. */
     public void logout() {
         this.token = null;
+        this.authenticated = false;
         this.user = Collections.emptyMap();
         this.http = newHttpClient();
+    }
+
+    /** GET /api/v1/auth/me. */
+    public Object currentUser() throws ApiException {
+        Object response = get("/api/v1/auth/me");
+        Map<String, Object> found = ApiData.findMap(response, "user", "pengguna", "profile");
+        if (!found.isEmpty()) {
+            this.user = found;
+        }
+        return response;
+    }
+
+    /** GET /api/v1/dashboard/summary. */
+    public Object dashboardSummary() throws ApiException {
+        return get("/api/v1/dashboard/summary");
+    }
+
+    /** GET /api/v1/announcements. */
+    public Object announcements() throws ApiException {
+        return get("/api/v1/announcements?limit=50");
+    }
+
+    /** GET /api/v1/notifications. */
+    public Object notifications() throws ApiException {
+        return get("/api/v1/notifications?limit=50");
+    }
+
+    /** GET /api/v1/resources/{resource}. */
+    public Object resource(String resource) throws ApiException {
+        return resource(resource, 100, 0);
+    }
+
+    public Object resource(String resource, int limit, int offset) throws ApiException {
+        return resource(resource, limit, offset, "");
+    }
+
+    public Object resource(String resource, int limit, int offset, String search) throws ApiException {
+        if (resource == null || !resource.matches("[a-z-]+")) {
+            throw new ApiException("Nama resource API tidak valid.", 0);
+        }
+        if (limit < 1 || limit > 100 || offset < 0 || offset > 1000000) {
+            throw new ApiException("Parameter halaman resource API tidak valid.", 0);
+        }
+        String path = "/api/v1/resources/" + resource + "?limit=" + limit + "&offset=" + offset;
+        if (search != null && !search.trim().isEmpty()) {
+            path += "&search=" + URLEncoder.encode(search.trim(), StandardCharsets.UTF_8);
+        }
+        return get(path);
+    }
+
+    public Object pendingRegistrations() throws ApiException {
+        return get("/api/v1/registrations/pending");
+    }
+
+    public Object registerAccount(Map<String, Object> body) throws ApiException {
+        return post("/api/v1/auth/register", body);
+    }
+
+    public Object approveRegistration(long id) throws ApiException {
+        return post("/api/v1/registrations/" + positiveId(id) + "/approve", new LinkedHashMap<>());
+    }
+
+    public Object createLetterRequest(Map<String, Object> body) throws ApiException {
+        return post("/api/v1/letters", body);
+    }
+
+    public Object decideLetter(long id, Map<String, Object> body) throws ApiException {
+        return post("/api/v1/letters/" + positiveId(id) + "/decision", body);
+    }
+
+    public Object updateProfile(Map<String, Object> body) throws ApiException {
+        Object response = send("PATCH", "/api/v1/auth/profile", body);
+        Map<String, Object> found = ApiData.findMap(response, "user", "pengguna", "profile");
+        if (!found.isEmpty()) {
+            this.user = found;
+        }
+        return response;
+    }
+
+    public Object changePassword(Map<String, Object> body) throws ApiException {
+        return post("/api/v1/auth/password", body);
+    }
+
+    public Object createFamily(Map<String, Object> body) throws ApiException {
+        return post("/api/v1/families", body);
+    }
+
+    public Object updateFamily(long id, Map<String, Object> body) throws ApiException {
+        return patch("/api/v1/families/" + positiveId(id), body);
+    }
+
+    public Object deleteFamily(long id) throws ApiException {
+        return delete("/api/v1/families/" + positiveId(id));
+    }
+
+    public Object createResident(Map<String, Object> body) throws ApiException {
+        return post("/api/v1/residents", body);
+    }
+
+    public Object updateResident(long id, Map<String, Object> body) throws ApiException {
+        return patch("/api/v1/residents/" + positiveId(id), body);
+    }
+
+    public Object deleteResident(long id) throws ApiException {
+        return delete("/api/v1/residents/" + positiveId(id));
+    }
+
+    public Object createInvoice(Map<String, Object> body) throws ApiException {
+        return post("/api/v1/invoices", body);
+    }
+
+    public Object updateInvoice(long id, Map<String, Object> body) throws ApiException {
+        return patch("/api/v1/invoices/" + positiveId(id), body);
+    }
+
+    public Object deleteInvoice(long id) throws ApiException {
+        return delete("/api/v1/invoices/" + positiveId(id));
+    }
+
+    public Object decidePayment(long id, Map<String, Object> body) throws ApiException {
+        return post("/api/v1/payments/" + positiveId(id) + "/decision", body);
+    }
+
+    public Object createAnnouncement(Map<String, Object> body) throws ApiException {
+        return post("/api/v1/announcements", body);
+    }
+
+    public Object updateAnnouncement(long id, Map<String, Object> body) throws ApiException {
+        return patch("/api/v1/announcements/" + positiveId(id), body);
+    }
+
+    public Object deleteAnnouncement(long id) throws ApiException {
+        return delete("/api/v1/announcements/" + positiveId(id));
+    }
+
+    public Object createActivity(Map<String, Object> body) throws ApiException {
+        return post("/api/v1/activities", body);
+    }
+
+    public Object updateActivity(long id, Map<String, Object> body) throws ApiException {
+        return patch("/api/v1/activities/" + positiveId(id), body);
+    }
+
+    public Object deleteActivity(long id) throws ApiException {
+        return delete("/api/v1/activities/" + positiveId(id));
+    }
+
+    private static long positiveId(long id) throws ApiException {
+        if (id < 1) {
+            throw new ApiException("ID data tidak valid.", 0);
+        }
+        return id;
     }
 
     public String userName() {
         Object v = ApiData.firstValue(user, "nama", "nama_lengkap", "name", "email", "username");
         return v == null ? "Pengguna" : v.toString();
+    }
+
+    public String userEmail() {
+        Object value = ApiData.firstValue(user, "email");
+        return value == null ? "" : value.toString();
+    }
+
+    public String userPhone() {
+        Object value = ApiData.firstValue(user, "phone", "telepon", "no_telepon");
+        return value == null ? "" : value.toString();
+    }
+
+    public String userRoleCode() {
+        Object value = ApiData.firstValue(user, "roleCode", "role_code");
+        return value == null ? "" : value.toString();
+    }
+
+    public boolean hasPermission(String permission) {
+        Object values = user.get("permissions");
+        if (!(values instanceof List)) {
+            return false;
+        }
+        return ((List<?>) values).contains(permission);
+    }
+
+    public boolean hasPermissions(String... permissions) {
+        for (String permission : permissions) {
+            if (!hasPermission(permission)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public String userRole() {
@@ -113,6 +315,14 @@ public final class ApiClient {
 
     public Object post(String path, Object body) throws ApiException {
         return send("POST", path, body);
+    }
+
+    public Object patch(String path, Object body) throws ApiException {
+        return send("PATCH", path, body);
+    }
+
+    public Object delete(String path) throws ApiException {
+        return send("DELETE", path, null);
     }
 
     private Object send(String method, String path, Object body) throws ApiException {
